@@ -1,6 +1,6 @@
 node_modules/
 build/
-dist/
+# dist/  (Allowed so compiled production build can be pushed to GitHub & deployed to cPanel)
 coverage/
 .DS_Store
 *.log
