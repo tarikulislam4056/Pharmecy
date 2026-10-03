@@ -1,0 +1,9 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/YOUR_CPANEL_USERNAME/public_html
+    - /bin/cp -R * $DEPLOYPATH
+    - /bin/cp -R dist/* $DEPLOYPATH
+    - /bin/cp public/.htaccess $DEPLOYPATH/.htaccess 2>/dev/null || true
+    - /bin/cp public/api.php $DEPLOYPATH/api.php 2>/dev/null || true
+    - /bin/cp public/database.sql $DEPLOYPATH/database.sql 2>/dev/null || true
