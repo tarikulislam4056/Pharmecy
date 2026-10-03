@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="dokanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#4338CA" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#dokanGrad)" filter="url(#shadow)"/>
+  <!-- Shop Building Icon -->
+  <path d="M30 46 L64 26 L98 46 L98 52 L30 52 Z" fill="#FFFFFF" opacity="0.95"/>
+  <rect x="36" y="52" width="56" height="4" fill="#E0E7FF"/>
+  <!-- Pillars / Front -->
+  <rect x="34" y="58" width="12" height="34" rx="2" fill="#FFFFFF"/>
+  <rect x="52" y="58" width="12" height="34" rx="2" fill="#FFFFFF"/>
+  <rect x="70" y="58" width="12" height="34" rx="2" fill="#FFFFFF"/>
+  <rect x="84" y="58" width="10" height="34" rx="2" fill="#FFFFFF"/>
+  <!-- Base Foundation -->
+  <rect x="28" y="94" width="72" height="8" rx="3" fill="#FFFFFF"/>
+  <!-- Center Taka / Currency Sparkle -->
+  <circle cx="64" cy="39" r="5" fill="#FBBF24"/>
+</svg>

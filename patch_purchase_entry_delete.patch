@@ -1,0 +1,38 @@
+--- src/components/purchase/PurchaseEntryView.tsx
++++ src/components/purchase/PurchaseEntryView.tsx
+@@ -467,2 +467,6 @@
+ 
++    if (initialData) {
++      deletePurchaseInvoice(initialData.id);
++    }
++
+     const newPurchase = createPurchaseInvoice({
+@@ -511,2 +515,6 @@
+     handleResetForm();
++
++    if (initialData && onCancelEdit) {
++      onCancelEdit();
++    }
+   };
+@@ -1078,3 +1086,3 @@
+               className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold shadow-xs transition-colors cursor-pointer ${
+-                itemsSubtotal === 0 ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white'
++                itemsSubtotal === 0 ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : initialData ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+               }`}
+@@ -1082,3 +1090,3 @@
+             >
+-              <Check className="w-5 h-5 mr-2 inline-block" /> {language === 'bn' ? 'সংরক্ষণ করুন (F9)' : 'Save Purchase (F9)'}
++              <Check className="w-5 h-5 mr-2 inline-block" /> {language === 'bn' ? (initialData ? 'পরিবর্তন সংরক্ষণ করুন (F9)' : 'সংরক্ষণ করুন (F9)') : (initialData ? 'Update Purchase (F9)' : 'Save Purchase (F9)')}
+             </button>
+@@ -1087,2 +1095,11 @@
+           </div>
++          {initialData && onCancelEdit && (
++            <button
++              type="button"
++              onClick={onCancelEdit}
++              className="flex-1 py-3 px-4 rounded-xl text-sm font-bold shadow-xs transition-colors bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer"
++            >
++              {language === 'bn' ? 'বাতিল করুন' : 'Cancel Edit'}
++            </button>
++          )}
+         </div>

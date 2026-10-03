@@ -1,0 +1,60 @@
+--- src/components/purchase/PurchaseEntryView.tsx
++++ src/components/purchase/PurchaseEntryView.tsx
+@@ -53,2 +53,4 @@
+ export const PurchaseEntryView: React.FC<PurchaseEntryViewProps> = ({
+   onOpenNewSupplierModal,
++  initialData,
++  onCancelEdit,
+ }) => {
+@@ -64,2 +66,3 @@
+     showToast,
+     setActiveTab,
++    deletePurchaseInvoice,
+   } = useApp();
+@@ -68,3 +71,3 @@
+   // Top Controls: Cash vs Credit Toggle
+-  const [purchaseMode, setPurchaseMode] = useState<'CASH' | 'CREDIT'>('CASH');
++  const [purchaseMode, setPurchaseMode] = useState<'CASH' | 'CREDIT'>(initialData?.dueAmount ? 'CREDIT' : 'CASH');
+ 
+@@ -74,3 +77,3 @@
+   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+-  const [selectedSupplierId, setSelectedSupplierId] = useState<string>(suppliers[0]?.id || '');
++  const [selectedSupplierId, setSelectedSupplierId] = useState<string>(initialData?.supplierId || suppliers[0]?.id || '');
+ 
+@@ -79,2 +82,5 @@
+   const [invoiceNo, setInvoiceNo] = useState<string>(() => {
++    if (initialData?.supplierInvoiceNo) {
++      return initialData.supplierInvoiceNo;
++    }
+     return 'PUR-' + Math.floor(1000000000 + Math.random() * 9000000000).toString().slice(0, 10);
+@@ -83,2 +89,5 @@
+   const [invoiceDate, setInvoiceDate] = useState<string>(() => {
++    if (initialData?.date) {
++      return initialData.date;
++    }
+     const today = new Date();
+@@ -88,3 +97,3 @@
+   // Table Rows for items
+-  const [items, setItems] = useState<PurchaseRowItem[]>([
++  const [items, setItems] = useState<PurchaseRowItem[]>(initialData ? initialData.items.map((i, idx) => ({ ...i, id: `row-${idx}`, barcode: '', discount: 0, discountType: 'flat', taxPercent: 0, stock: 0 })) : [
+     {
+@@ -102,3 +111,3 @@
+     },
+-  ]);
++  ]);
+ 
+@@ -111,3 +120,3 @@
+   const [paymentSplits, setPaymentSplits] = useState<SplitPaymentRow[]>([
+-    {
++    initialData && initialData.paidAmount > 0 ? { id: 'pay-1', method: initialData.paymentMethod, walletId: initialData.walletId, amount: initialData.paidAmount } : {
+       id: 'pay-1',
+@@ -116,3 +125,3 @@
+       amount: 0,
+-    },
++    },
+   ]);
+@@ -122,3 +131,3 @@
+   const [sendSupplierSms, setSendSupplierSms] = useState<boolean>(false);
+-  const [description, setDescription] = useState<string>('');
++  const [description, setDescription] = useState<string>(initialData?.notes || '');
+   const [attachedImage, setAttachedImage] = useState<string | null>(null);

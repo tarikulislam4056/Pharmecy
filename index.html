@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DokanPro ERP - Shop & Inventory Management</title>
+    <meta name="title" content="DokanPro ERP - Shop & Inventory Management" />
+    <meta name="description" content="Modern Shop Management & ERP Web Application tailored for retail and wholesale businesses with multi-lingual (English/Bengali), POS, Installments, Daybook, Payroll, and Accounting." />
+    <meta name="application-name" content="DokanPro ERP" />
+    <meta name="apple-mobile-web-app-title" content="DokanPro ERP" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#4F46E5" />
+
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DokanPro ERP" />
+    <meta property="og:title" content="DokanPro ERP - Shop & Inventory Management" />
+    <meta property="og:description" content="Modern Shop Management & ERP Web Application tailored for retail and wholesale businesses with multi-lingual (English/Bengali), POS, Installments, Daybook, Payroll, and Accounting." />
+    <meta property="og:image" content="/favicon.svg" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="DokanPro ERP - Shop & Inventory Management" />
+    <meta name="twitter:description" content="Modern Shop Management & ERP Web Application tailored for retail and wholesale businesses with multi-lingual (English/Bengali), POS, Installments, Daybook, Payroll, and Accounting." />
+    <meta name="twitter:image" content="/favicon.svg" />
+
+    <script>
+      (function() {
+        try {
+          const saved = localStorage.getItem('companySettings');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed && parsed.name && parsed.name.trim()) {
+              const storeTitle = parsed.name.trim() + ' | DokanPro ERP';
+              document.title = storeTitle;
+              const ogTitle = document.querySelector('meta[property="og:title"]');
+              if (ogTitle) ogTitle.setAttribute('content', storeTitle);
+              const twTitle = document.querySelector('meta[name="twitter:title"]');
+              if (twTitle) twTitle.setAttribute('content', storeTitle);
+              const metaTitle = document.querySelector('meta[name="title"]');
+              if (metaTitle) metaTitle.setAttribute('content', storeTitle);
+              const appName = document.querySelector('meta[name="application-name"]');
+              if (appName) appName.setAttribute('content', parsed.name.trim());
+              const appleName = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+              if (appleName) appleName.setAttribute('content', parsed.name.trim());
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to load company name in head script:', e);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

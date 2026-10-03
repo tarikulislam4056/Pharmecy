@@ -1,0 +1,25 @@
+--- src/components/purchase/PurchaseListView.tsx
++++ src/components/purchase/PurchaseListView.tsx
+@@ -10,2 +10,3 @@
+   ArrowUpRight,
++  Edit,
+   Trash2,
+@@ -19,2 +20,3 @@
+   onOpenReturnModal: (purchase: PurchaseInvoice) => void;
++  onEditInvoice: (purchase: PurchaseInvoice) => void;
+ }
+@@ -24,2 +26,3 @@
+   onOpenReturnModal,
++  onEditInvoice,
+ }) => {
+@@ -213,2 +216,10 @@
+                         </button>
++                        <button
++                          type="button"
++                          onClick={() => onEditInvoice(pur)}
++                          title="Edit Invoice"
++                          className="p-1.5 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900 rounded transition-colors cursor-pointer"
++                        >
++                          <Edit className="w-3.5 h-3.5" />
++                        </button>
+                         <button

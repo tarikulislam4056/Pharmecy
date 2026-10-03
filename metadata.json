@@ -1,0 +1,8 @@
+{
+  "name": "DokanPro ERP - Shop & Inventory Management",
+  "description": "Modern Shop Management & ERP Web Application tailored for retail and wholesale businesses with multi-lingual (English/Bengali), POS, Installments, Daybook, Payroll, and Accounting.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

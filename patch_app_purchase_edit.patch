@@ -1,0 +1,23 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -39,3 +39,3 @@
+ import { CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+-import { Party, PartyType, Product } from './types';
++import { Party, PartyType, Product, PurchaseInvoice } from './types';
+ 
+@@ -59,2 +59,3 @@
+   const [isCashAdjustModalOpen, setIsCashAdjustModalOpen] = useState(false);
++  const [purchaseInvoiceToEdit, setPurchaseInvoiceToEdit] = useState<PurchaseInvoice | null>(null);
+ 
+@@ -162,2 +163,4 @@
+           <PurchaseEntryView
++            initialData={purchaseInvoiceToEdit}
++            onCancelEdit={() => { setPurchaseInvoiceToEdit(null); setActiveTab('purchase-list'); }}
+             onOpenNewSupplierModal={() => handleOpenAddParty('SUPPLIER')}
+@@ -169,2 +172,6 @@
+           <PurchaseListView
++            onEditInvoice={(pur) => {
++              setPurchaseInvoiceToEdit(pur);
++              setActiveTab('purchase-entry');
++            }}
+             onOpenPaymentOutModal={handleOpenPaymentOut}

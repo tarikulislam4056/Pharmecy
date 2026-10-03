@@ -1,0 +1,77 @@
+--- src/context/AppContext.tsx
++++ src/context/AppContext.tsx
+@@ -188,2 +188,3 @@
+   }) => PurchaseInvoice | null;
++  deletePurchaseInvoice: (invoiceId: string) => void;
+   createPurchaseReturn: (returnData: {
+@@ -1068,2 +1069,57 @@
+ 
++  const deletePurchaseInvoice = (invoiceId: string) => {
++    const inv = purchaseInvoices.find(i => i.id === invoiceId);
++    if (!inv) {
++      showToast(language === 'bn' ? 'চালানটি খুঁজে পাওয়া যায়নি!' : 'Purchase Bill not found!', 'error');
++      return;
++    }
++
++    // 1. Revert product stocks (subtract purchased quantities from stock)
++    setProducts(prevProds =>
++      prevProds.map(prod => {
++        const itemPurchased = inv.items.find(i => i.productId === prod.id);
++        if (itemPurchased) {
++          return {
++            ...prod,
++            stock: Math.max(0, prod.stock - (itemPurchased.quantity || 0)),
++          };
++        }
++        return prod;
++      })
++    );
++
++    // 2. Adjust Supplier Due balance if this invoice increased supplier's due
++    if (inv.supplierId && inv.dueAmount > 0) {
++      setParties(prevParties =>
++        prevParties.map(p => {
++          if (p.id === inv.supplierId) {
++            return {
++              ...p,
++              currentBalance: Math.max(0, p.currentBalance - inv.dueAmount),
++            };
++          }
++          return p;
++        })
++      );
++    }
++
++    // 3. Revert wallet balance if paid amount was deducted
++    if (inv.paidAmount > 0 && inv.walletId) {
++      setWallets(prevWallets =>
++        prevWallets.map(w => {
++          if (w.id === inv.walletId) {
++            return {
++              ...w,
++              balance: w.balance + inv.paidAmount,
++            };
++          }
++          return w;
++        })
++      );
++    }
++
++    // 4. Remove linked DayBook entry if created for this invoice
++    setDayBookEntries(prev =>
++      prev.filter(
++        d => d.voucherNo !== inv.billNumber && d.referenceNo !== inv.billNumber
++      )
++    );
++
++    // 5. Remove invoice from state
++    setPurchaseInvoices(prev => prev.filter(i => i.id !== invoiceId));
++
++    showToast(language === 'bn' ? 'ক্রয় চালান ডিলিট করা হয়েছে।' : 'Purchase bill deleted successfully.', 'success');
++  };
++
+   const createPurchaseReturn = (data: {
+@@ -1967,2 +2023,3 @@
+         createPurchaseInvoice,
++        deletePurchaseInvoice,
+         createPurchaseReturn,

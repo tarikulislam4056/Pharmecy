@@ -1,0 +1,21 @@
+--- src/components/purchase/PurchaseEntryView.tsx
++++ src/components/purchase/PurchaseEntryView.tsx
+@@ -214,3 +214,8 @@
+       prev.map(row => {
+         if (row.id !== rowId) return row;
+-        const updated = { ...row, [field]: value };
++        
++        let parsedValue = value;
++        if (typeof value === 'string') {
++          parsedValue = value.replace(/^0+(?=\d)/, '');
++        }
++        const updated = { ...row, [field]: parsedValue };
+ 
+@@ -219,5 +224,5 @@
+-        const qty = field === 'quantity' ? Math.max(0, parseFloat(value) || 0) : row.quantity;
+-        const price = field === 'purchasePrice' ? Math.max(0, parseFloat(value) || 0) : row.purchasePrice;
+-        const disc = field === 'discount' ? Math.max(0, parseFloat(value) || 0) : row.discount;
++        const qty = field === 'quantity' ? Math.max(0, parseFloat(parsedValue) || 0) : row.quantity;
++        const price = field === 'purchasePrice' ? Math.max(0, parseFloat(parsedValue) || 0) : row.purchasePrice;
++        const disc = field === 'discount' ? Math.max(0, parseFloat(parsedValue) || 0) : row.discount;
+ 

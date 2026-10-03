@@ -1,0 +1,48 @@
+--- src/components/purchase/PurchaseListView.tsx
++++ src/components/purchase/PurchaseListView.tsx
+@@ -10,2 +10,3 @@
+   ArrowUpRight,
++  Trash2,
+   Truck,
+@@ -25,2 +26,2 @@
+-  const { language, purchaseInvoices, formatCurrency, openPrintModal, setActiveTab } = useApp();
++  const { language, purchaseInvoices, formatCurrency, openPrintModal, setActiveTab, deletePurchaseInvoice } = useApp();
+   const { t } = useTranslation(language);
+@@ -31,2 +32,3 @@
+   const [statusFilter, setStatusFilter] = useState<string>('ALL');
++  const [invoiceToDelete, setInvoiceToDelete] = useState<PurchaseInvoice | null>(null);
+ 
+@@ -53,2 +55,19 @@
+   return (
++    <>
++      {invoiceToDelete && (
++        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
++          <div className="bg-white dark:bg-zinc-900 rounded-xl max-w-sm w-full p-5 shadow-2xl">
++            <h3 className="text-lg font-bold text-rose-600 dark:text-rose-400 mb-2">Delete Invoice?</h3>
++            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
++              Are you sure you want to delete purchase invoice <strong className="font-mono text-zinc-900 dark:text-white">{invoiceToDelete.billNumber}</strong>? This action cannot be undone and will revert stock and wallet balances.
++            </p>
++            <div className="flex justify-end gap-3">
++              <button onClick={() => setInvoiceToDelete(null)} className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-sm font-medium">Cancel</button>
++              <button onClick={() => { deletePurchaseInvoice(invoiceToDelete.id); setInvoiceToDelete(null); }} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-bold">Delete</button>
++            </div>
++          </div>
++        </div>
++      )}
++
+     <div className="space-y-4">
+@@ -213,2 +232,10 @@
+                         </button>
++                        <button
++                          type="button"
++                          onClick={() => setInvoiceToDelete(pur)}
++                          title="Delete Invoice"
++                          className="p-1.5 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 rounded transition-colors"
++                        >
++                          <Trash2 className="w-3.5 h-3.5" />
++                        </button>
+                       </div>
+@@ -224,2 +251,3 @@
+     </div>
++    </>
+   );

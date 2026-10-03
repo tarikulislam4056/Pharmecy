@@ -1,0 +1,17 @@
+{
+  "name": "DokanPro ERP - Shop & Inventory Management",
+  "short_name": "DokanPro ERP",
+  "description": "Modern Shop Management & ERP Web Application tailored for retail and wholesale businesses with POS, Accounting, Inventory & Due Book.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "128x128 192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
