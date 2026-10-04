@@ -88,13 +88,26 @@ export const AVAILABLE_PERMISSIONS: PermissionDefinition[] = [
     name: 'Product Inventory & Catalog',
     nameBn: 'পণ্য স্টক ও ক্যাটালগ',
     description: 'Add and edit products, manage categories, warranty claims, pricing, barcodes & utilities',
-    tabs: ['products-list', 'medicine', 'batch-inventory', 'categories', 'warranties', 'utilities'],
+    tabs: ['products-list', 'batch-inventory', 'categories', 'warranties', 'utilities'],
     category: 'module',
     subPermissions: [
       { id: 'PRODUCT_ADD', name: 'Add Product', nameBn: 'পণ্য যোগ' },
       { id: 'PRODUCT_EDIT', name: 'Edit Product', nameBn: 'পণ্য সম্পাদনা' },
       { id: 'PRODUCT_DELETE', name: 'Delete Product', nameBn: 'পণ্য মুছে ফেলা' },
       { id: 'PRODUCT_EXPORT_CSV', name: 'Export CSV (Product Directory)', nameBn: 'এক্সপোর্ট CSV (প্রোডাক্ট ডিরেক্টরি)' },
+    ],
+  },
+  {
+    id: 'MEDICINE_ACCESS',
+    name: 'Medicine & Prescription Directory',
+    nameBn: 'মেডিসিন / ঔষধ ব্যবস্থাপনা (Medicine)',
+    description: 'Access medicine directory, dosage forms, generics, disease master DB, prescription builder & medicine catalog',
+    tabs: ['medicine'],
+    category: 'module',
+    subPermissions: [
+      { id: 'MEDICINE_ADD', name: 'Add Medicine', nameBn: 'ঔষধ যোগ' },
+      { id: 'MEDICINE_EDIT', name: 'Edit Medicine', nameBn: 'ঔষধ সম্পাদনা' },
+      { id: 'MEDICINE_DELETE', name: 'Delete Medicine', nameBn: 'ঔষধ মুছে ফেলা' },
     ],
   },
   {
@@ -181,6 +194,7 @@ export const ROLE_PRESET_PERMISSIONS: Record<string, string[]> = {
     'SALES_MANAGEMENT',
     'PURCHASE_MANAGEMENT',
     'PRODUCTS_INVENTORY',
+    'MEDICINE_ACCESS',
     'PARTIES_LEDGER',
     'FINANCE_CASH',
     'EXPENSES',
@@ -228,6 +242,9 @@ export const ROLE_PRESET_SUB_PERMISSIONS: Record<string, string[]> = {
     'PRODUCT_EDIT',
     'PRODUCT_DELETE',
     'PRODUCT_EXPORT_CSV',
+    'MEDICINE_ADD',
+    'MEDICINE_EDIT',
+    'MEDICINE_DELETE',
     'REPORT_EXPORT_CSV',
     'REPORT_DOWNLOAD_PDF',
     'REPORT_PRINT_STATEMENT',
@@ -247,6 +264,8 @@ export const ROLE_PRESET_SUB_PERMISSIONS: Record<string, string[]> = {
     'PRODUCT_ADD',
     'PRODUCT_EDIT',
     'PRODUCT_EXPORT_CSV',
+    'MEDICINE_ADD',
+    'MEDICINE_EDIT',
     'REPORT_EXPORT_CSV',
     'REPORT_DOWNLOAD_PDF',
     'REPORT_PRINT_STATEMENT',
@@ -303,13 +322,16 @@ export const canUserDelete = (user: UserAccount | null | undefined, module?: 'sa
   if (module === 'user' && (user.subPermissions?.includes('USER_DELETE') || user.permissions?.includes('USER_DELETE'))) {
     return true;
   }
+  if (module === 'medicine' && (user.subPermissions?.includes('MEDICINE_DELETE') || user.permissions?.includes('MEDICINE_DELETE'))) {
+    return true;
+  }
   return false;
 };
 
 /**
  * Check if a user has permission to EDIT records (e.g. sales invoices, products, purchases)
  */
-export const canUserEdit = (user: UserAccount | null | undefined, module?: 'sales' | 'purchase' | 'product' | 'user' | string): boolean => {
+export const canUserEdit = (user: UserAccount | null | undefined, module?: 'sales' | 'purchase' | 'product' | 'user' | 'medicine' | string): boolean => {
   if (!user) return false;
   if (user.role === 'ADMIN' || user.permissions?.includes('ALL')) {
     return true;
@@ -327,6 +349,9 @@ export const canUserEdit = (user: UserAccount | null | undefined, module?: 'sale
     return true;
   }
   if (module === 'user' && (user.subPermissions?.includes('USER_EDIT') || user.permissions?.includes('USER_EDIT'))) {
+    return true;
+  }
+  if (module === 'medicine' && (user.subPermissions?.includes('MEDICINE_EDIT') || user.permissions?.includes('MEDICINE_EDIT'))) {
     return true;
   }
   return false;
@@ -422,6 +447,17 @@ export const hasAnyPermission = (user: UserAccount | null | undefined, permissio
 };
 
 /**
+ * Check if a user has permission to Access Medicine Management
+ */
+export const canUserAccessMedicine = (user: UserAccount | null | undefined): boolean => {
+  if (!user) return false;
+  if (user.role === 'ADMIN' || user.permissions?.includes('ALL')) {
+    return true;
+  }
+  return hasPermission(user, 'MEDICINE_ACCESS') || hasPermission(user, 'PRODUCTS_INVENTORY');
+};
+
+/**
  * Map a tab to the required permission(s)
  */
 export const TAB_PERMISSION_MAP: Record<ViewTab, string[]> = {
@@ -437,7 +473,7 @@ export const TAB_PERMISSION_MAP: Record<ViewTab, string[]> = {
   'purchase-returns': ['PURCHASE_MANAGEMENT'],
   'deleted-purchases': ['PURCHASE_MANAGEMENT'],
   'products-list': ['PRODUCTS_INVENTORY'],
-  'medicine': ['PRODUCTS_INVENTORY', 'POS_ACCESS'],
+  'medicine': ['MEDICINE_ACCESS', 'PRODUCTS_INVENTORY'],
   'batch-inventory': ['PRODUCTS_INVENTORY'],
   'categories': ['PRODUCTS_INVENTORY'],
   'warranties': ['PRODUCTS_INVENTORY'],

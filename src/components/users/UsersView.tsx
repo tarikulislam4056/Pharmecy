@@ -30,6 +30,7 @@ import {
   Printer,
   Download,
   FileSpreadsheet,
+  Pill,
 } from 'lucide-react';
 
 import {
@@ -44,6 +45,8 @@ import {
   canUserExportReportCsv,
   canUserDownloadReportPdf,
   canUserPrintReportStatement,
+  canUserAccessMedicine,
+  hasPermission,
 } from '../../utils/permissions';
 
 export const UsersView: React.FC = () => {
@@ -333,6 +336,30 @@ export const UsersView: React.FC = () => {
         ? `"${targetUser.fullName}"-এর জন্য ${actionLabel} ${statusLabel}`
         : `${actionLabel} ${statusLabel} for ${targetUser.fullName}`,
       !hasIt ? 'success' : 'info'
+    );
+  };
+
+  const handleToggleUserMedicinePermission = (targetUser: UserAccount) => {
+    if (currentUser.role !== 'ADMIN') {
+      showToast(language === 'bn' ? 'শুধুমাত্র এডমিন পারমিশন পরিবর্তন করতে পারবেন।' : 'Only Admins can change user permissions.', 'error');
+      return;
+    }
+    const currentPerms = targetUser.permissions || [];
+    const hasMed = hasPermission(targetUser, 'MEDICINE_ACCESS');
+    let newPerms = [...currentPerms];
+    if (hasMed) {
+      newPerms = newPerms.filter(p => p !== 'MEDICINE_ACCESS');
+    } else {
+      if (!newPerms.includes('MEDICINE_ACCESS')) {
+        newPerms.push('MEDICINE_ACCESS');
+      }
+    }
+    updateUser(targetUser.id, { permissions: newPerms });
+    showToast(
+      language === 'bn'
+        ? `"${targetUser.fullName}"-এর জন্য মেডিসিন বাটন ${!hasMed ? 'অনুমতি প্রদান করা হয়েছে ✅' : 'বন্ধ করা হয়েছে ❌'}`
+        : `Medicine access ${!hasMed ? 'granted ✅' : 'revoked ❌'} for ${targetUser.fullName}`,
+      !hasMed ? 'success' : 'info'
     );
   };
 
@@ -779,9 +806,10 @@ export const UsersView: React.FC = () => {
                           const canRepCsv = canUserExportReportCsv(u);
                           const canRepPdf = canUserDownloadReportPdf(u);
                           const canRepPrint = canUserPrintReportStatement(u);
+                          const hasMedAccess = canUserAccessMedicine(u);
 
                           return (
-                            <div className="flex flex-col items-center gap-1.5 min-w-[190px]">
+                            <div className="flex flex-col items-center gap-1.5 min-w-[210px]">
                               {/* Overall module count or ALL badge */}
                               <div className="flex items-center gap-1.5">
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-mono font-bold text-xs">
@@ -789,8 +817,31 @@ export const UsersView: React.FC = () => {
                                 </span>
                               </div>
 
-                              {/* Granular Export / PDF / Print Quick-Toggles */}
+                              {/* Granular Export / PDF / Print / Medicine Quick-Toggles */}
                               <div className="flex flex-wrap items-center justify-center gap-1">
+                                {/* Medicine Access Toggle */}
+                                <button
+                                  type="button"
+                                  disabled={u.role === 'ADMIN'}
+                                  onClick={() => handleToggleUserMedicinePermission(u)}
+                                  title={
+                                    u.role === 'ADMIN'
+                                      ? 'Admin has full access'
+                                      : (hasMedAccess
+                                          ? (language === 'bn' ? 'মেডিসিন / ঔষধ বাটন পারমিশন সক্রিয় (ক্লিক করে বন্ধ করুন)' : 'Medicine Button: Allowed (Click to toggle off)')
+                                          : (language === 'bn' ? 'মেডিসিন / ঔষধ বাটন পারমিশন বন্ধ (ক্লিক করে অনুমতি দিন)' : 'Medicine Button: Disabled (Click to grant)'))
+                                  }
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5 transition-all shadow-2xs ${
+                                    hasMedAccess
+                                      ? 'bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 opacity-60'
+                                  } ${u.role === 'ADMIN' ? 'cursor-default opacity-100' : 'cursor-pointer'}`}
+                                >
+                                  <Pill className="w-2.5 h-2.5 text-emerald-600" />
+                                  <span>Medicine</span>
+                                  {hasMedAccess ? <Check className="w-2.5 h-2.5 text-emerald-600" /> : <X className="w-2.5 h-2.5 text-slate-400" />}
+                                </button>
+
                                 {/* 1. Product Export CSV */}
                                 <button
                                   type="button"
