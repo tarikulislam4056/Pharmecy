@@ -183,9 +183,9 @@ export function getProductExpirySummary(p: Product, withinDays: number = 30): Pr
     }
 
     let displayStatus: 'EXPIRED' | 'EXPIRING_SOON' | 'FRESH' | 'NO_EXPIRY' = 'NO_EXPIRY';
-    if (hasExpired && p.stock > 0) displayStatus = 'EXPIRED';
-    else if (hasExpiringSoon && p.stock > 0) displayStatus = 'EXPIRING_SOON';
-    else if (hasFresh && p.stock > 0) displayStatus = 'FRESH';
+    if (hasExpired) displayStatus = 'EXPIRED';
+    else if (hasExpiringSoon) displayStatus = 'EXPIRING_SOON';
+    else if (hasFresh) displayStatus = 'FRESH';
 
     return {
       hasExpired,
@@ -212,7 +212,7 @@ export function getProductExpirySummary(p: Product, withinDays: number = 30): Pr
       hasAnyExpiry: false,
       expiredBatchesCount: 0,
       expiringSoonBatchesCount: 0,
-      activeValidBatchesCount: p.stock > 0 ? 1 : 0,
+      activeValidBatchesCount: 1, // Changed from p.stock > 0 ? 1 : 0
       earliestExpDate: null,
       minDaysRemaining: null,
       displayStatus: 'NO_EXPIRY',
@@ -226,16 +226,16 @@ export function getProductExpirySummary(p: Product, withinDays: number = 30): Pr
   const isFr = days !== null && days > withinDays;
 
   return {
-    hasExpired: isExp && p.stock > 0,
-    hasExpiringSoon: isSoon && p.stock > 0,
-    hasFresh: isFr && p.stock > 0,
+    hasExpired: isExp, // Changed from isExp && p.stock > 0
+    hasExpiringSoon: isSoon, // Changed from isSoon && p.stock > 0
+    hasFresh: isFr, // Changed from isFr && p.stock > 0
     hasAnyExpiry: true,
-    expiredBatchesCount: isExp && p.stock > 0 ? 1 : 0,
-    expiringSoonBatchesCount: isSoon && p.stock > 0 ? 1 : 0,
-    activeValidBatchesCount: !isExp && p.stock > 0 ? 1 : 0,
+    expiredBatchesCount: isExp ? 1 : 0, // Changed
+    expiringSoonBatchesCount: isSoon ? 1 : 0, // Changed
+    activeValidBatchesCount: !isExp ? 1 : 0, // Changed
     earliestExpDate: pExpISO,
     minDaysRemaining: days,
-    displayStatus: isExp && p.stock > 0 ? 'EXPIRED' : isSoon && p.stock > 0 ? 'EXPIRING_SOON' : isFr ? 'FRESH' : 'NO_EXPIRY',
+    displayStatus: isExp ? 'EXPIRED' : isSoon ? 'EXPIRING_SOON' : isFr ? 'FRESH' : 'NO_EXPIRY', // Changed
     formattedDisplayDate: pExpISO,
   };
 }
