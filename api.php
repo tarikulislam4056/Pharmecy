@@ -126,6 +126,15 @@ switch ($action) {
                 }
             }
 
+            $isResetWipe = !empty($input['is_reset_wipe']) || !empty($input['data']['is_reset_wipe']);
+            if ($isResetWipe) {
+                $existing = [];
+                $input['is_reset_wipe'] = false;
+                if (isset($input['data'])) {
+                    $input['data']['is_reset_wipe'] = false;
+                }
+            }
+
             // Merge company settings
             $existingSettings = isset($existing['companySettings']) && is_array($existing['companySettings']) ? $existing['companySettings'] : [];
             $incomingSettings = isset($input['companySettings']) && is_array($input['companySettings']) ? $input['companySettings'] : [];
@@ -134,20 +143,26 @@ switch ($action) {
                 $mergedSettings['name'] = $incomingSettings['companyName'];
             }
 
-            $deletedSaleIds = array_unique(array_filter(array_merge(
-                isset($existing['deletedSaleInvoices']) && is_array($existing['deletedSaleInvoices']) ? array_column($existing['deletedSaleInvoices'], 'id') : [],
-                isset($input['deletedSaleInvoices']) && is_array($input['deletedSaleInvoices']) ? array_column($input['deletedSaleInvoices'], 'id') : []
-            )));
+            if ($isResetWipe) {
+                $deletedSaleIds = [];
+                $deletedPurchaseIds = [];
+                $deletedProductIds = [];
+            } else {
+                $deletedSaleIds = array_unique(array_filter(array_merge(
+                    isset($existing['deletedSaleInvoices']) && is_array($existing['deletedSaleInvoices']) ? array_column($existing['deletedSaleInvoices'], 'id') : [],
+                    isset($input['deletedSaleInvoices']) && is_array($input['deletedSaleInvoices']) ? array_column($input['deletedSaleInvoices'], 'id') : []
+                )));
 
-            $deletedPurchaseIds = array_unique(array_filter(array_merge(
-                isset($existing['deletedPurchaseInvoices']) && is_array($existing['deletedPurchaseInvoices']) ? array_column($existing['deletedPurchaseInvoices'], 'id') : [],
-                isset($input['deletedPurchaseInvoices']) && is_array($input['deletedPurchaseInvoices']) ? array_column($input['deletedPurchaseInvoices'], 'id') : []
-            )));
+                $deletedPurchaseIds = array_unique(array_filter(array_merge(
+                    isset($existing['deletedPurchaseInvoices']) && is_array($existing['deletedPurchaseInvoices']) ? array_column($existing['deletedPurchaseInvoices'], 'id') : [],
+                    isset($input['deletedPurchaseInvoices']) && is_array($input['deletedPurchaseInvoices']) ? array_column($input['deletedPurchaseInvoices'], 'id') : []
+                )));
 
-            $deletedProductIds = array_unique(array_filter(array_merge(
-                isset($existing['deletedProductIds']) && is_array($existing['deletedProductIds']) ? $existing['deletedProductIds'] : [],
-                isset($input['deletedProductIds']) && is_array($input['deletedProductIds']) ? $input['deletedProductIds'] : []
-            )));
+                $deletedProductIds = array_unique(array_filter(array_merge(
+                    isset($existing['deletedProductIds']) && is_array($existing['deletedProductIds']) ? $existing['deletedProductIds'] : [],
+                    isset($input['deletedProductIds']) && is_array($input['deletedProductIds']) ? $input['deletedProductIds'] : []
+                )));
+            }
 
             $collectionsToMerge = [
                 'categories', 'parties', 'wallets',

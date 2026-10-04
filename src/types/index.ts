@@ -1055,3 +1055,10 @@ export interface DiseaseMasterEntry {
   description?: string;
   recommendedMedicines: DiseaseMasterMedicine[];
 }
+
+export interface DiseaseCategoryItem {
+  id: string;
+  name: string;
+  nameBn: string;
+  isDefault?: boolean;
+}

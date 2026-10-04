@@ -354,7 +354,7 @@ const MainLayout: React.FC = () => {
         );
 
       case 'medicine':
-        return <MedicineView />;
+        return isTabAllowed(currentUser, 'medicine') ? <MedicineView /> : <div className="text-center p-10">Access Denied</div>;
 
       case 'batch-inventory':
         return <BatchInventoryView />;

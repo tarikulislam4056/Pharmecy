@@ -301,6 +301,8 @@ export const SettingsView: React.FC = () => {
   }, [companySettings]);
 
   const [showConfirmResetModal, setShowConfirmResetModal] = useState(false);
+  const [adminIdConfirm, setAdminIdConfirm] = useState('');
+  const [resetError, setResetError] = useState('');
 
   const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'logoUrl' | 'signatureUrl') => {
     const file = e.target.files?.[0];
@@ -1329,7 +1331,11 @@ export const SettingsView: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setShowConfirmResetModal(true)}
+                onClick={() => {
+                  setAdminIdConfirm('');
+                  setResetError('');
+                  setShowConfirmResetModal(true);
+                }}
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer shrink-0 flex items-center gap-2 self-start sm:self-auto"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -3918,10 +3924,35 @@ npm start
                 : 'Are you sure you want to permanently clear and reset all products, sales, purchases, customer ledgers, and cash transaction records? This action cannot be undone.'}
             </p>
 
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {language === 'bn' ? 'নিশ্চিত করতে অ্যাডমিন আইডি বা ইউজারনেম দিন:' : 'Enter Admin ID or Username to confirm:'}
+              </label>
+              <input
+                type="text"
+                value={adminIdConfirm}
+                onChange={(e) => {
+                  setAdminIdConfirm(e.target.value);
+                  setResetError('');
+                }}
+                placeholder={language === 'bn' ? 'উদাহরণ: admin' : 'e.g. admin'}
+                className="w-full px-3 py-2 text-xs border rounded-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-rose-500 font-mono"
+              />
+              {resetError && (
+                <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">
+                  {resetError}
+                </p>
+              )}
+            </div>
+
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
-                onClick={() => setShowConfirmResetModal(false)}
+                onClick={() => {
+                  setShowConfirmResetModal(false);
+                  setAdminIdConfirm('');
+                  setResetError('');
+                }}
                 className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold cursor-pointer transition-colors"
               >
                 {language === 'bn' ? 'বাতিল করুন (Cancel)' : 'Cancel'}
@@ -3930,8 +3961,20 @@ npm start
               <button
                 type="button"
                 onClick={() => {
+                  if (!adminIdConfirm.trim()) {
+                    setResetError(language === 'bn' ? 'অনুগ্রহ করে অ্যাডমিন আইডি বা ইউজারনেম টাইপ করুন।' : 'Please enter the Admin ID or Username.');
+                    return;
+                  }
+                  const adminUserList = users.filter(u => u.role === 'ADMIN');
+                  const isValidAdminId = adminUserList.some(u => u.username === adminIdConfirm || u.id === adminIdConfirm);
+                  if (!isValidAdminId) {
+                    setResetError(language === 'bn' ? 'ভুল অ্যাডমিন আইডি! সঠিক অ্যাডমিন আইডি বা ইউজারনেম দিন।' : 'Invalid Admin ID! Please enter a valid Admin ID or Username.');
+                    return;
+                  }
                   resetToDemoData();
                   setShowConfirmResetModal(false);
+                  setAdminIdConfirm('');
+                  setResetError('');
                 }}
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-lg text-xs font-bold shadow-md cursor-pointer transition-all flex items-center gap-1.5"
               >

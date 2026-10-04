@@ -46,7 +46,10 @@ import {
   WarrantyPeriodType,
   WarrantyType,
   PartyType,
+  DiseaseMasterEntry,
+  DiseaseCategoryItem,
 } from '../types';
+import { INITIAL_DISEASE_MASTER } from '../data/diseaseMasterData';
 import { generatePartySerialNumber, findDuplicatePartySerial } from '../utils/partyHelpers';
 import {
   generateSaleInvoiceNumber,
@@ -441,6 +444,12 @@ interface AppContextType {
   deleteSmsLog: (id: string) => void;
   clearSmsLogs: () => void;
 
+  // Medicine Diseases Template
+  diseaseMaster: DiseaseMasterEntry[];
+  setDiseaseMaster: React.Dispatch<React.SetStateAction<DiseaseMasterEntry[]>>;
+  diseaseCategories: DiseaseCategoryItem[];
+  setDiseaseCategories: React.Dispatch<React.SetStateAction<DiseaseCategoryItem[]>>;
+
   // Global Helpers
   resetToDemoData: () => void;
   formatCurrency: (amount: number) => string;
@@ -507,6 +516,20 @@ function getPersistedData<T>(fieldKey: string, fallback: T): T {
   }
   return fallback;
 }
+
+export const COMMON_DISEASE_CATEGORIES: DiseaseCategoryItem[] = [
+  { id: 'ALL', name: 'সকল রোগ (All Diseases)', nameBn: 'সকল রোগ', isDefault: true },
+  { id: 'General & Pain', name: 'জ্বর ও ব্যথা (Fever & Pain)', nameBn: 'জ্বর ও সাধারণ ব্যথা', isDefault: true },
+  { id: 'Gastrointestinal', name: 'গ্যাস্ট্রিক ও পেট (Gastric & Stomach)', nameBn: 'গ্যাস্ট্রিক ও পরিপakতন্ত্র', isDefault: true },
+  { id: 'Respiratory', name: 'সর্দি ও কাশি (Cold & Cough)', nameBn: 'শ্বাসতন্ত্র ও কাশি', isDefault: true },
+  { id: 'Dermatology & Allergy', name: 'অ্যালার্জি ও চর্ম (Allergy & Skin)', nameBn: 'অ্যালার্জি ও চুলকানি', isDefault: true },
+  { id: 'ENT (Ear, Nose, Throat)', name: 'নাক, কান ও গলা (ENT)', nameBn: 'নাক, কান ও গলা', isDefault: true },
+  { id: 'Dental Care', name: 'দাঁত ও মাড়ি (Dental)', nameBn: 'দাঁত ও মাড়ির যত্ন', isDefault: true },
+  { id: 'Cardiovascular', name: 'উচ্চ রক্তচাপ (Blood Pressure)', nameBn: 'হৃদরোগ ও রক্তচাপ', isDefault: true },
+  { id: 'Endocrinology', name: 'ডায়াবেটিস (Diabetes)', nameBn: 'ডায়াবেটিস', isDefault: true },
+  { id: 'Urology', name: 'প্রস্রাব ও কিডনি (UTI)', nameBn: 'মূত্রনালী ও কিডনি', isDefault: true },
+  { id: 'Supplements & Nutrition', name: 'ভিটামিন ও পুষ্টি (Supplements)', nameBn: 'পুষ্টি ও দুর্বলতা', isDefault: true },
+];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Settings & Theme
@@ -1281,6 +1304,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newPurchase;
   };
   const [expiredReturnLogs, setExpiredReturnLogs] = useState<ExpiredReturnLog[]>(() => getPersistedData('expiredReturnLogs', []));
+  const [diseaseMaster, setDiseaseMaster] = useState<DiseaseMasterEntry[]>(() =>
+    getPersistedData('diseaseMaster', INITIAL_DISEASE_MASTER)
+  );
+  const [diseaseCategories, setDiseaseCategories] = useState<DiseaseCategoryItem[]>(() =>
+    getPersistedData('diseaseCategories', COMMON_DISEASE_CATEGORIES)
+  );
 
   const addExpiredReturnLog = (logData: Omit<ExpiredReturnLog, 'id' | 'date'> & { date?: string }) => {
     const creator = currentUser?.fullName || currentUser?.username || currentUser?.id || 'Admin';
@@ -1600,12 +1629,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         warrantyPolicies,
         warrantyRecords,
         warrantyClaims,
+        diseaseMaster,
+        diseaseCategories,
         language,
         theme,
         lastUpdatedEpoch: Date.now(),
       };
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
       localStorage.setItem('companySettings', JSON.stringify(companySettings));
+      localStorage.setItem('dokanpro_disease_master', JSON.stringify(diseaseMaster));
+      localStorage.setItem('dokanpro_disease_categories', JSON.stringify(diseaseCategories));
       localStorage.setItem('DOKANPRO_LAST_LOCAL_UPDATE_EPOCH', String(Date.now()));
     } catch (e) {
       console.warn('Failed to save to local storage', e);
@@ -1643,6 +1676,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     warrantyPolicies,
     warrantyRecords,
     warrantyClaims,
+    diseaseMaster,
+    diseaseCategories,
     language,
     theme,
   ]);
@@ -6294,6 +6329,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setWarrantyPolicies(initialWarrantyPolicies);
     setWarrantyRecords([]);
     setWarrantyClaims([]);
+    setDiseaseMaster(INITIAL_DISEASE_MASTER);
+    setDiseaseCategories(COMMON_DISEASE_CATEGORIES);
     setUsers(initialUsers);
     setCurrentUser(initialUsers[0]);
 
@@ -6329,6 +6366,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       warrantyPolicies: initialWarrantyPolicies,
       warrantyRecords: [],
       warrantyClaims: [],
+      diseaseMaster: INITIAL_DISEASE_MASTER,
+      diseaseCategories: COMMON_DISEASE_CATEGORIES,
       users: initialUsers,
       smsConfig,
       smsLogs: [],
@@ -6461,6 +6500,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteWarrantyClaim,
         deleteSmsLog,
         clearSmsLogs,
+        diseaseMaster,
+        setDiseaseMaster,
+        diseaseCategories,
+        setDiseaseCategories,
         printableDoc,
         openPrintModal,
         closePrintModal,

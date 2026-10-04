@@ -66,6 +66,8 @@ export interface FullAppStateForSql {
   warrantyPolicies?: WarrantyPolicy[];
   warrantyRecords?: WarrantyRecord[];
   warrantyClaims?: WarrantyClaim[];
+  diseaseMaster?: any[];
+  diseaseCategories?: any[];
 }
 
 /**
@@ -295,6 +297,32 @@ CREATE TABLE \`medicines\` (
   \`batch_no\` varchar(100) DEFAULT NULL,
   \`rack_location\` varchar(100) DEFAULT NULL,
   \`created_at\` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table structure for \`disease_categories\`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS \`disease_categories\`;
+CREATE TABLE \`disease_categories\` (
+  \`id\` varchar(50) NOT NULL PRIMARY KEY,
+  \`name\` varchar(150) NOT NULL,
+  \`nameBn\` varchar(150) NOT NULL,
+  \`isDefault\` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table structure for \`disease_master\`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS \`disease_master\`;
+CREATE TABLE \`disease_master\` (
+  \`id\` varchar(50) NOT NULL PRIMARY KEY,
+  \`diseaseName\` varchar(255) NOT NULL,
+  \`diseaseNameBn\` varchar(255) NOT NULL,
+  \`category\` varchar(100) NOT NULL,
+  \`categoryBn\` varchar(100) DEFAULT NULL,
+  \`symptoms_json\` longtext DEFAULT NULL,
+  \`description\` text DEFAULT NULL,
+  \`recommendedMedicines_json\` longtext DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1033,6 +1061,34 @@ CREATE TABLE \`warranty_claims\` (
       sqlEscape(p.createdAt || ''),
     ]);
     sql += buildChunkedInserts('medicines', medColumns, medRows);
+  }
+
+  // 4b. Disease Categories
+  if (state.diseaseCategories && state.diseaseCategories.length > 0) {
+    const disCatColumns = ['id', 'name', 'nameBn', 'isDefault'];
+    const disCatRows = state.diseaseCategories.map(dc => [
+      sqlEscape(dc.id),
+      sqlEscape(dc.name),
+      sqlEscape(dc.nameBn),
+      dc.isDefault ? '1' : '0'
+    ]);
+    sql += buildChunkedInserts('disease_categories', disCatColumns, disCatRows);
+  }
+
+  // 4c. Disease Master
+  if (state.diseaseMaster && state.diseaseMaster.length > 0) {
+    const disColumns = ['id', 'diseaseName', 'diseaseNameBn', 'category', 'categoryBn', 'symptoms_json', 'description', 'recommendedMedicines_json'];
+    const disRows = state.diseaseMaster.map(d => [
+      sqlEscape(d.id),
+      sqlEscape(d.diseaseName),
+      sqlEscape(d.diseaseNameBn),
+      sqlEscape(d.category),
+      sqlEscape(d.categoryBn || ''),
+      sqlEscape(d.symptoms || []),
+      sqlEscape(d.description || ''),
+      sqlEscape(d.recommendedMedicines || [])
+    ]);
+    sql += buildChunkedInserts('disease_master', disColumns, disRows);
   }
 
   // 5. Parties (Customers & Suppliers)

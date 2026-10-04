@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation } from '../../i18n/translations';
-import { Product, ProductBatch, UnitType, DiseaseMasterEntry, DiseaseMasterMedicine } from '../../types';
+import { Product, ProductBatch, UnitType, DiseaseMasterEntry, DiseaseMasterMedicine, DiseaseCategoryItem } from '../../types';
 import { canUserEdit, canUserDelete } from '../../utils/permissions';
 import { INITIAL_DISEASE_MASTER } from '../../data/diseaseMasterData';
 import {
@@ -42,13 +42,6 @@ import {
   FolderPlus,
   Tag
 } from 'lucide-react';
-
-export interface DiseaseCategoryItem {
-  id: string;
-  name: string;
-  nameBn: string;
-  isDefault?: boolean;
-}
 
 const COMMON_DOSAGE_FORMS = [
   'Tablet',
@@ -346,59 +339,17 @@ export const MedicineView: React.FC = () => {
     currentUser,
     setActiveTab,
     showToast,
-    companySettings
+    companySettings,
+    diseaseMaster,
+    setDiseaseMaster,
+    diseaseCategories,
+    setDiseaseCategories
   } = useApp();
 
   const { t } = useTranslation(language);
 
   // Top Section Mode: 'diseases' (রোগ অনুযায়ী ঔষধ ও সেবনবিধি) vs 'categories' (ক্যাটাগরি তালিকা) vs 'master' (রোগের তালিকা ও প্রোটোকল মাস্টার)
   const [activeSubView, setActiveSubView] = useState<'diseases' | 'categories' | 'master'>('diseases');
-
-  // Disease Master State (persisted in localStorage)
-  const [diseaseMaster, setDiseaseMaster] = useState<DiseaseMasterEntry[]>(() => {
-    try {
-      const saved = localStorage.getItem('dokanpro_disease_master');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.error('Error loading disease master from localStorage', e);
-    }
-    return INITIAL_DISEASE_MASTER;
-  });
-
-  // Save diseaseMaster to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem('dokanpro_disease_master', JSON.stringify(diseaseMaster));
-    } catch (e) {
-      console.error('Error saving disease master to localStorage', e);
-    }
-  }, [diseaseMaster]);
-
-  // Disease Categories State (persisted in localStorage)
-  const [diseaseCategories, setDiseaseCategories] = useState<DiseaseCategoryItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('dokanpro_disease_categories');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.error('Error loading disease categories from localStorage', e);
-    }
-    return COMMON_DISEASE_CATEGORIES;
-  });
-
-  // Save diseaseCategories to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem('dokanpro_disease_categories', JSON.stringify(diseaseCategories));
-    } catch (e) {
-      console.error('Error saving disease categories to localStorage', e);
-    }
-  }, [diseaseCategories]);
 
   // Category Management Modal State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
