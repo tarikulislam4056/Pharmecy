@@ -23,9 +23,12 @@ jobs:
         run: |
           npm install
           npm run build
+          cp api.php dist/ 2>/dev/null || true
+          cp database.sql dist/ 2>/dev/null || true
+          cp public/.htaccess dist/ 2>/dev/null || true
 
       - name: 🚀 Sync Files via FTP to cPanel
-        uses: SamKirland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirland/FTP-Deploy-Action@v4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
