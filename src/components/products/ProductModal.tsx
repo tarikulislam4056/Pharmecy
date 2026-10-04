@@ -36,6 +36,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [strength, setStrength] = useState<string>('');
   const [dosageForm, setDosageForm] = useState<string>('');
   const [dosageSchedule, setDosageSchedule] = useState<string>('');
+  const [rackLocation, setRackLocation] = useState<string>('');
   const [stock, setStock] = useState<string>('');
   const [unit, setUnit] = useState<UnitType>('Pcs');
   const [reorderLevel, setReorderLevel] = useState<string>('5');
@@ -71,6 +72,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       setStrength(productToEdit.strength || '');
       setDosageForm(productToEdit.dosageForm || '');
       setDosageSchedule(productToEdit.dosageSchedule || '');
+      setRackLocation(productToEdit.rackLocation || '');
       setStock(productToEdit.stock?.toString() || '0');
       setUnit(productToEdit.unit || 'Pcs');
       setReorderLevel(productToEdit.reorderLevel?.toString() || '5');
@@ -99,6 +101,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       setStrength('');
       setDosageForm('');
       setDosageSchedule('');
+      setRackLocation('');
       setStock('0');
       setUnit('Pcs');
       setReorderLevel('5');
@@ -233,6 +236,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       strength: strength.trim() || undefined,
       dosageForm: dosageForm.trim() || undefined,
       dosageSchedule: dosageSchedule.trim() || undefined,
+      rackLocation: rackLocation.trim() || undefined,
       stock: parseInt(stock) || 0,
       unit,
       reorderLevel: parseInt(reorderLevel) || 5,
@@ -377,7 +381,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Generic Name (জেনেরিক নাম)
@@ -413,6 +417,18 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   <option key={m} value={m} />
                 ))}
               </datalist>
+            </div>
+            <div>
+              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Rack Location (র‍্যাক / শেলফ লোকেশন)
+              </label>
+              <input
+                type="text"
+                value={rackLocation}
+                onChange={e => setRackLocation(e.target.value)}
+                placeholder="e.g. Rack A-01, Shelf 3"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 font-mono text-slate-900 dark:text-white"
+              />
             </div>
           </div>
 

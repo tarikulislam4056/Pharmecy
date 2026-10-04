@@ -34,6 +34,7 @@ import {
   Clock,
   ArrowUpDown,
   Camera,
+  MapPin,
 } from 'lucide-react';
 
 interface ProductsListViewProps {
@@ -165,6 +166,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
         p.barcode.toLowerCase().includes(query) ||
         (p.generic && p.generic.toLowerCase().includes(query)) ||
         (p.manufacturer && p.manufacturer.toLowerCase().includes(query)) ||
+        (p.rackLocation && p.rackLocation.toLowerCase().includes(query)) ||
         (p.strength && p.strength.toLowerCase().includes(query)) ||
         (p.dosageForm && p.dosageForm.toLowerCase().includes(query)) ||
         (p.dosageSchedule && p.dosageSchedule.toLowerCase().includes(query)) ||
@@ -1193,6 +1195,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                   <th className="py-3 px-4">{language === 'bn' ? 'স্ট্রেংথ (Strength)' : 'Strength'}</th>
                   <th className="py-3 px-4">{language === 'bn' ? 'ডোজ ও সেবনবিধি' : 'Dosage & Rules'}</th>
                   <th className="py-3 px-4">{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</th>
+                  <th className="py-3 px-4 font-mono">{language === 'bn' ? 'র‍্যাক/শেলফ' : 'Rack Location'}</th>
                   <th className="py-3 px-4 font-mono">{language === 'bn' ? 'বারকোড' : 'Barcode'}</th>
                   <th className="py-3 px-4 font-mono">{language === 'bn' ? 'ব্যাচ নং' : 'Batch No'}</th>
                   <th className="py-3 px-4 font-mono">{language === 'bn' ? 'মেয়াদ তারিখ' : 'Exp. Date'}</th>
@@ -1207,7 +1210,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={16} className="py-12 text-center text-zinc-400">
+                    <td colSpan={17} className="py-12 text-center text-zinc-400">
                       {language === 'bn' ? 'নির্বাচিত ফিল্টারে কোনো পণ্য পাওয়া যায়নি।' : 'No products found for the selected filters.'}
                     </td>
                   </tr>
@@ -1278,6 +1281,12 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                               </div>
                               <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-2 mt-0.5 flex-wrap">
                                 <span>SKU: {p.sku}</span>
+                                {p.rackLocation && (
+                                  <span className="inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-300 font-mono font-bold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-200/60 dark:border-amber-800/60">
+                                    <MapPin className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+                                    <span>{p.rackLocation}</span>
+                                  </span>
+                                )}
                                 {p.dosageSchedule && (
                                   <span className="text-purple-600 dark:text-purple-400 font-sans font-semibold">
                                     • {p.dosageSchedule}
@@ -1346,6 +1355,18 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                           <div className="font-semibold text-xs text-zinc-800 dark:text-zinc-200">
                             {p.categoryName || 'General'}
                           </div>
+                        </td>
+
+                        {/* Rack Location */}
+                        <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">
+                          {p.rackLocation ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 rounded font-bold">
+                              <MapPin className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                              <span>{p.rackLocation}</span>
+                            </span>
+                          ) : (
+                            <span className="text-zinc-400 font-normal">—</span>
+                          )}
                         </td>
 
                         {/* Barcode */}

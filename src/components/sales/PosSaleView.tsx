@@ -375,6 +375,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
         p.sku.toLowerCase().includes(q) ||
         (p.generic && p.generic.toLowerCase().includes(q)) ||
         (p.manufacturer && p.manufacturer.toLowerCase().includes(q)) ||
+        (p.rackLocation && p.rackLocation.toLowerCase().includes(q)) ||
         (p.categoryName && p.categoryName.toLowerCase().includes(q));
       return matchesCat && matchesQuery;
     });
@@ -393,6 +394,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
           p.sku.toLowerCase().includes(q) ||
           (p.generic && p.generic.toLowerCase().includes(q)) ||
           (p.manufacturer && p.manufacturer.toLowerCase().includes(q)) ||
+          (p.rackLocation && p.rackLocation.toLowerCase().includes(q)) ||
           (p.categoryName && p.categoryName.toLowerCase().includes(q)))
       );
     });
