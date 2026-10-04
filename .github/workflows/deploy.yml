@@ -28,10 +28,11 @@ jobs:
           cp public/.htaccess dist/ 2>/dev/null || true
 
       - name: 🚀 Sync Files via FTP to cPanel
-        uses: SamKirland/FTP-Deploy-Action@v4
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: ${{ secrets.FTP_DIR || '/public_html/' }}
-          local-dir: './dist/'
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIR: ${{ secrets.FTP_DIR || '/public_html/' }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y lftp
+          lftp -c "set ftp:ssl-allow false; set net:timeout 15; set net:max-retries 3; open -u '$FTP_USERNAME','$FTP_PASSWORD' '$FTP_SERVER'; mirror -R --delete --verbose ./dist/ '$FTP_DIR'"
