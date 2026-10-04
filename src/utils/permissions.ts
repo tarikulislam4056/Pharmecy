@@ -454,7 +454,7 @@ export const canUserAccessMedicine = (user: UserAccount | null | undefined): boo
   if (user.role === 'ADMIN' || user.permissions?.includes('ALL')) {
     return true;
   }
-  return hasPermission(user, 'MEDICINE_ACCESS') || hasPermission(user, 'PRODUCTS_INVENTORY');
+  return hasPermission(user, 'MEDICINE_ACCESS');
 };
 
 /**
@@ -473,7 +473,7 @@ export const TAB_PERMISSION_MAP: Record<ViewTab, string[]> = {
   'purchase-returns': ['PURCHASE_MANAGEMENT'],
   'deleted-purchases': ['PURCHASE_MANAGEMENT'],
   'products-list': ['PRODUCTS_INVENTORY'],
-  'medicine': ['MEDICINE_ACCESS', 'PRODUCTS_INVENTORY'],
+  'medicine': ['MEDICINE_ACCESS'],
   'batch-inventory': ['PRODUCTS_INVENTORY'],
   'categories': ['PRODUCTS_INVENTORY'],
   'warranties': ['PRODUCTS_INVENTORY'],

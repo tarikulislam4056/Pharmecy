@@ -1188,7 +1188,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
             <table className="w-full text-left text-xs">
               <thead className="bg-zinc-50 dark:bg-zinc-850 text-zinc-500 dark:text-zinc-400 font-semibold border-b border-zinc-200 dark:border-zinc-800">
                 <tr>
-                  <th className="py-3 px-4">{language === 'bn' ? 'পণ্য ও বিবরণ' : 'Item & SKU'}</th>
+                  <th className="py-3 px-4">{language === 'bn' ? 'পণ্যের নাম' : 'Product Name'}</th>
                   <th className="py-3 px-4 font-mono">{language === 'bn' ? 'যোগের তারিখ' : 'Added Date'}</th>
                   <th className="py-3 px-4">{language === 'bn' ? 'জেনেরিক' : 'Generic'}</th>
                   <th className="py-3 px-4">{language === 'bn' ? 'ব্র্যান্ড / কোম্পানি' : 'Brand / Company'}</th>
@@ -1252,46 +1252,6 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                               <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 flex-wrap">
                                 <span>{p.name}</span>
                                 {p.nameBn && <span className="text-zinc-500 font-normal">({p.nameBn})</span>}
-                                {p.strength && (
-                                  <span className="px-1.5 py-0.2 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-[10px] font-bold rounded">
-                                    {p.strength}
-                                  </span>
-                                )}
-                                {p.dosageForm && (
-                                  <span className="px-1.5 py-0.2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded">
-                                    {p.dosageForm}
-                                  </span>
-                                )}
-                                {p.batches && p.batches.length > 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setBatchProduct(p)}
-                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-mono text-[10px] font-bold border border-indigo-200 dark:border-indigo-800 transition-colors cursor-pointer"
-                                    title="View & Manage Batches"
-                                  >
-                                    <Boxes className="w-3 h-3 text-indigo-500" />
-                                    <span>{p.batches.length} {language === 'bn' ? 'ব্যাচ' : 'Batches'}</span>
-                                  </button>
-                                )}
-                                {itemExpired && p.stock > 0 && (
-                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-600 text-white font-bold flex items-center gap-0.5 shadow-2xs">
-                                    🔴 {language === 'bn' ? 'মেয়াদ শেষ' : 'Expired'}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-2 mt-0.5 flex-wrap">
-                                <span>SKU: {p.sku}</span>
-                                {p.rackLocation && (
-                                  <span className="inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-300 font-mono font-bold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-200/60 dark:border-amber-800/60">
-                                    <MapPin className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
-                                    <span>{p.rackLocation}</span>
-                                  </span>
-                                )}
-                                {p.dosageSchedule && (
-                                  <span className="text-purple-600 dark:text-purple-400 font-sans font-semibold">
-                                    • {p.dosageSchedule}
-                                  </span>
-                                )}
                               </div>
                             </div>
                           </div>
