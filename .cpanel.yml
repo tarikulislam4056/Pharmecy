@@ -5,5 +5,6 @@ deployment:
     - /bin/cp -R * $DEPLOYPATH
     - if [ -d "dist" ]; then /bin/cp -R dist/* $DEPLOYPATH; fi
     - /bin/cp public/.htaccess $DEPLOYPATH/.htaccess 2>/dev/null || true
-    - /bin/cp public/api.php $DEPLOYPATH/api.php 2>/dev/null || true
-    - /bin/cp public/database.sql $DEPLOYPATH/database.sql 2>/dev/null || true
+    - /bin/cp api.php $DEPLOYPATH/api.php 2>/dev/null || true
+    - /bin/cp database.sql $DEPLOYPATH/database.sql 2>/dev/null || true
+    - /bin/cp public/database.sql $DEPLOYPATH/public_database.sql 2>/dev/null || true
