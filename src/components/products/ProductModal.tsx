@@ -583,7 +583,18 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               <input
                 type="date"
                 value={expDate}
-                onChange={e => setExpDate(e.target.value)}
+                onChange={e => {
+                  const val = e.target.value;
+                  setExpDate(val);
+                  if (val && new Date(val) < new Date(new Date().setHours(0,0,0,0))) {
+                    showToast(
+                      language === 'bn' 
+                        ? 'সতর্কতা: মেয়াদের তারিখ আজকের আগের একটি তারিখ!' 
+                        : 'Warning: Expiry date is set to a past date!', 
+                      'warning'
+                    );
+                  }
+                }}
                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 dark:text-white"
               />
             </div>

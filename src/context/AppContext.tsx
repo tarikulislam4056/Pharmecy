@@ -1494,6 +1494,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       sessionStorage.removeItem('DOKANPRO_IS_LOGGED_IN');
       sessionStorage.removeItem('DOKANPRO_CURRENT_USER');
+      localStorage.setItem('DOKANPRO_HAS_UNSYNCED_CHANGES', 'false');
+      hasUnsyncedChangesRef.current = false;
     } catch {}
     setIsLoggedIn(false);
     showToast(language === 'bn' ? 'সফলভাবে লগআউট করা হয়েছে।' : 'Logged out successfully.', 'success');
@@ -1640,6 +1642,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('dokanpro_disease_master', JSON.stringify(diseaseMaster));
       localStorage.setItem('dokanpro_disease_categories', JSON.stringify(diseaseCategories));
       localStorage.setItem('DOKANPRO_LAST_LOCAL_UPDATE_EPOCH', String(Date.now()));
+
+      // If this change was NOT from a server pull, and it's not the initial mount, mark as unsynced
+      if (isMountedRef.current && !isIncomingSyncRef.current) {
+        if (!hasUnsyncedChangesRef.current) {
+          hasUnsyncedChangesRef.current = true;
+          localStorage.setItem('DOKANPRO_HAS_UNSYNCED_CHANGES', 'true');
+        }
+      }
+      isMountedRef.current = true;
     } catch (e) {
       console.warn('Failed to save to local storage', e);
       try {
@@ -1711,8 +1722,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return 0;
     })()
   );
+  const isMountedRef = useRef<boolean>(false);
   const isPullingRef = useRef<boolean>(false);
-  const hasCompletedInitialServerSyncRef = useRef<boolean>(true);
+  const isIncomingSyncRef = useRef<boolean>(false);
+  const hasCompletedInitialServerSyncRef = useRef<boolean>(false);
+  const hasUnsyncedChangesRef = useRef<boolean>(
+    (() => {
+      try {
+        return localStorage.getItem('DOKANPRO_HAS_UNSYNCED_CHANGES') === 'true';
+      } catch {
+        return false;
+      }
+    })()
+  );
   const [lastServerSyncTime, setLastServerSyncTime] = useState<string | null>(() => {
     try {
       return localStorage.getItem('DOKANPRO_LAST_SYNC_TIME');
@@ -1868,6 +1890,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const json = await res.json();
       if (json && json.success) {
         lastServerUpdatedEpochRef.current = pushTimestamp;
+        hasUnsyncedChangesRef.current = false;
+        try {
+          localStorage.setItem('DOKANPRO_HAS_UNSYNCED_CHANGES', 'false');
+        } catch {}
         const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         setLastServerSyncTime(now);
         try {
@@ -1948,6 +1974,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const json = await res.json();
 
       if (json && (json.products || json.saleInvoices || json.companySettings || json.data)) {
+        isIncomingSyncRef.current = true;
         const data = json.data ? json.data : json;
         const serverEpoch = Number(data.lastUpdatedEpoch) || 0;
 
@@ -1967,8 +1994,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (serverEpoch > 0 && serverEpoch <= lastServerUpdatedEpochRef.current && !hasNewIncomingEntries && quiet) {
           // Already have the latest or newer version
           hasCompletedInitialServerSyncRef.current = true;
+          isIncomingSyncRef.current = false;
           return true;
         }
+
+        // Smart multi-device merge logic: 
+        // If this is the FIRST sync of the session and we don't have explicit unsynced local changes,
+        // we overwrite local state with server data to avoid uploading 'local history' (junk).
+        const shouldMerge = hasUnsyncedChangesRef.current || hasCompletedInitialServerSyncRef.current;
 
         // Safe merge for companySettings: never allow name, phone, address to be wiped
         if (data.companySettings) {
@@ -2043,102 +2076,106 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           // Smart multi-device union merge: never overwrite or wipe local unsynced entries, and honor deleted products
           if (Array.isArray(data.products)) {
             setProducts(prev => {
-              const merged = mergeEntitiesById(prev, data.products) as Product[];
-              return merged.filter(p => !allDeletedProductIds.has(String(p.id)) && (!p.sku || !allDeletedProductIds.has(String(p.sku))));
+              const merged = shouldMerge ? mergeEntitiesById(prev, data.products) : data.products;
+              return (merged as Product[]).filter(p => !allDeletedProductIds.has(String(p.id)) && (!p.sku || !allDeletedProductIds.has(String(p.sku))));
             });
           }
           if (Array.isArray(data.categories)) {
-            setCategories(prev => mergeEntitiesById(prev, data.categories));
+            setCategories(prev => shouldMerge ? mergeEntitiesById(prev, data.categories) : data.categories);
           }
           if (Array.isArray(data.parties)) {
-            setParties(prev => mergeEntitiesById(prev, data.parties));
+            setParties(prev => shouldMerge ? mergeEntitiesById(prev, data.parties) : data.parties);
           }
           if (Array.isArray(data.wallets) && data.wallets.length > 0) {
-            setWallets(prev => mergeEntitiesById(prev, data.wallets));
+            setWallets(prev => shouldMerge ? mergeEntitiesById(prev, data.wallets) : data.wallets);
           }
           if (Array.isArray(data.saleInvoices)) {
             setSaleInvoices(prev => {
-              const merged = mergeEntitiesById(prev, data.saleInvoices);
-              return merged.filter(inv => !allDeletedSaleIds.has(String(inv.id)));
+              const merged = shouldMerge ? mergeEntitiesById(prev, data.saleInvoices) : data.saleInvoices;
+              return (merged as SaleInvoice[]).filter(inv => !allDeletedSaleIds.has(String(inv.id)));
             });
           }
           if (Array.isArray(data.deletedSaleInvoices)) {
-            setDeletedSaleInvoices(prev => mergeEntitiesById(prev, data.deletedSaleInvoices));
+            setDeletedSaleInvoices(prev => shouldMerge ? mergeEntitiesById(prev, data.deletedSaleInvoices) : data.deletedSaleInvoices);
           }
           if (Array.isArray(data.saleReturns)) {
-            setSaleReturns(prev => mergeEntitiesById(prev, data.saleReturns));
+            setSaleReturns(prev => shouldMerge ? mergeEntitiesById(prev, data.saleReturns) : data.saleReturns);
           }
           if (Array.isArray(data.purchaseInvoices)) {
             setPurchaseInvoices(prev => {
-              const merged = mergeEntitiesById(prev, data.purchaseInvoices);
-              return merged.filter(inv => !allDeletedPurchaseIds.has(String(inv.id)));
+              const merged = shouldMerge ? mergeEntitiesById(prev, data.purchaseInvoices) : data.purchaseInvoices;
+              return (merged as PurchaseInvoice[]).filter(inv => !allDeletedPurchaseIds.has(String(inv.id)));
             });
           }
           if (Array.isArray(data.deletedPurchaseInvoices)) {
-            setDeletedPurchaseInvoices(prev => mergeEntitiesById(prev, data.deletedPurchaseInvoices));
+            setDeletedPurchaseInvoices(prev => shouldMerge ? mergeEntitiesById(prev, data.deletedPurchaseInvoices) : data.deletedPurchaseInvoices);
           }
           if (Array.isArray(data.purchaseReturns)) {
-            setPurchaseReturns(prev => mergeEntitiesById(prev, data.purchaseReturns));
+            setPurchaseReturns(prev => shouldMerge ? mergeEntitiesById(prev, data.purchaseReturns) : data.purchaseReturns);
           }
           if (Array.isArray(data.purchaseOrders)) {
-            setPurchaseOrders(prev => mergeEntitiesById(prev, data.purchaseOrders));
+            setPurchaseOrders(prev => shouldMerge ? mergeEntitiesById(prev, data.purchaseOrders) : data.purchaseOrders);
           }
           if (Array.isArray(data.quotations)) {
-            setQuotations(prev => mergeEntitiesById(prev, data.quotations));
+            setQuotations(prev => shouldMerge ? mergeEntitiesById(prev, data.quotations) : data.quotations);
           }
           if (Array.isArray(data.expiredReturnLogs)) {
-            setExpiredReturnLogs(prev => mergeEntitiesById(prev, data.expiredReturnLogs));
+            setExpiredReturnLogs(prev => shouldMerge ? mergeEntitiesById(prev, data.expiredReturnLogs) : data.expiredReturnLogs);
           }
           if (Array.isArray(data.installmentSchemes)) {
-            setInstallmentSchemes(prev => mergeEntitiesById(prev, data.installmentSchemes));
+            setInstallmentSchemes(prev => shouldMerge ? mergeEntitiesById(prev, data.installmentSchemes) : data.installmentSchemes);
           }
           if (Array.isArray(data.employees)) {
-            setEmployees(prev => mergeEntitiesById(prev, data.employees));
+            setEmployees(prev => shouldMerge ? mergeEntitiesById(prev, data.employees) : data.employees);
           }
           if (Array.isArray(data.advanceSalaries)) {
-            setAdvanceSalaries(prev => mergeEntitiesById(prev, data.advanceSalaries));
+            setAdvanceSalaries(prev => shouldMerge ? mergeEntitiesById(prev, data.advanceSalaries) : data.advanceSalaries);
           }
           if (Array.isArray(data.payrollHistory)) {
-            setPayrollHistory(prev => mergeEntitiesById(prev, data.payrollHistory));
+            setPayrollHistory(prev => shouldMerge ? mergeEntitiesById(prev, data.payrollHistory) : data.payrollHistory);
           }
           if (Array.isArray(data.expenseCategories) && data.expenseCategories.length > 0) {
-            setExpenseCategories(prev => mergeEntitiesById(prev, data.expenseCategories));
+            setExpenseCategories(prev => shouldMerge ? mergeEntitiesById(prev, data.expenseCategories) : data.expenseCategories);
           }
           if (Array.isArray(data.expenseVouchers)) {
-            setExpenseVouchers(prev => mergeEntitiesById(prev, data.expenseVouchers));
+            setExpenseVouchers(prev => shouldMerge ? mergeEntitiesById(prev, data.expenseVouchers) : data.expenseVouchers);
           }
           if (Array.isArray(data.dayBookEntries)) {
-            setDayBookEntries(prev => mergeEntitiesById(prev, data.dayBookEntries));
+            setDayBookEntries(prev => shouldMerge ? mergeEntitiesById(prev, data.dayBookEntries) : data.dayBookEntries);
           }
           if (Array.isArray(data.cashAdjustments)) {
-            setCashAdjustments(prev => mergeEntitiesById(prev, data.cashAdjustments));
+            setCashAdjustments(prev => shouldMerge ? mergeEntitiesById(prev, data.cashAdjustments) : data.cashAdjustments);
           }
           if (Array.isArray(data.activityLogs)) {
-            setActivityLogs(prev => mergeEntitiesById(prev, data.activityLogs));
+            setActivityLogs(prev => shouldMerge ? mergeEntitiesById(prev, data.activityLogs) : data.activityLogs);
           }
           if (Array.isArray(data.users) && data.users.length > 0) {
-            setUsers(prev => mergeEntitiesById(prev, data.users));
+            setUsers(prev => shouldMerge ? mergeEntitiesById(prev, data.users) : data.users);
           }
           if (data.smsConfig) {
             setSmsConfig(prev => ({ ...prev, ...data.smsConfig }));
           }
           if (Array.isArray(data.smsLogs)) {
-            setSmsLogs(prev => mergeEntitiesById(prev, data.smsLogs));
+            setSmsLogs(prev => shouldMerge ? mergeEntitiesById(prev, data.smsLogs) : data.smsLogs);
           }
           if (Array.isArray(data.warrantyPolicies) && data.warrantyPolicies.length > 0) {
-            setWarrantyPolicies(prev => mergeEntitiesById(prev, data.warrantyPolicies));
+            setWarrantyPolicies(prev => shouldMerge ? mergeEntitiesById(prev, data.warrantyPolicies) : data.warrantyPolicies);
           }
           if (Array.isArray(data.warrantyRecords)) {
-            setWarrantyRecords(prev => mergeEntitiesById(prev, data.warrantyRecords));
+            setWarrantyRecords(prev => shouldMerge ? mergeEntitiesById(prev, data.warrantyRecords) : data.warrantyRecords);
           }
           if (Array.isArray(data.warrantyClaims)) {
-            setWarrantyClaims(prev => mergeEntitiesById(prev, data.warrantyClaims));
+            setWarrantyClaims(prev => shouldMerge ? mergeEntitiesById(prev, data.warrantyClaims) : data.warrantyClaims);
           }
         }
 
         const appliedEpoch = serverEpoch || Date.now();
         lastServerUpdatedEpochRef.current = appliedEpoch;
         hasCompletedInitialServerSyncRef.current = true;
+        // After state update, we reset the incoming sync ref with a small delay to allow useEffects to run
+        setTimeout(() => {
+          isIncomingSyncRef.current = false;
+        }, 1000);
 
         const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         setLastServerSyncTime(now);
@@ -2166,25 +2203,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return true;
       } else {
         // Server responded with empty/no-data snapshot (fresh setup)
+        isIncomingSyncRef.current = true;
         if (!hasCompletedInitialServerSyncRef.current) {
           hasCompletedInitialServerSyncRef.current = true;
-          // Seed the server with our current state so other devices can pull it
-          setTimeout(() => {
-            triggerServerPush(targetUrl, true);
-          }, 300);
+          // NO AUTO-SEEDING: STRICTLY DO NOT UPLOAD LOCAL HISTORY AUTOMATICALLY
+          // The user must explicitly make an entry or trigger a manual sync push.
         }
+        setTimeout(() => {
+          isIncomingSyncRef.current = false;
+        }, 1000);
         return true;
       }
     } catch (err: any) {
+      isPullingRef.current = false;
+      isIncomingSyncRef.current = false;
+      hasCompletedInitialServerSyncRef.current = true; // Mark as attempted so user entries can now be tracked
       if (!quiet) {
         showToast(language === 'bn' ? `ডাটা পুল ব্যর্থ: ${err.message}` : `Data pull failed: ${err.message}`, 'warning');
       }
       return false;
     } finally {
       isPullingRef.current = false;
-      if (!quiet) {
-        setIsSyncingWithServer(false);
-      }
     }
   };
 
@@ -2281,6 +2320,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Instant background Auto-Push to Server & SQL file on entries/changes
   useEffect(() => {
     if (companySettings.autoSyncEnabled === false) return;
+    if (isIncomingSyncRef.current) return; // STRICTLY IGNORE CHANGES FROM SERVER PULL
+    
+    // Only auto-push if we have completed initial sync (cleared junk) OR have explicit unsynced changes
+    if (!hasCompletedInitialServerSyncRef.current && !hasUnsyncedChangesRef.current) {
+      return;
+    }
+
     const activeUrl = companySettings.apiEndpoint || localStorage.getItem('DOKANPRO_ERP_API_ENDPOINT') || getActiveApiEndpoint();
     if (!activeUrl) return;
 

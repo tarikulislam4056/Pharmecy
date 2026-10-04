@@ -239,3 +239,17 @@ export function getProductExpirySummary(p: Product, withinDays: number = 30): Pr
     formattedDisplayDate: pExpISO,
   };
 }
+
+/**
+ * Returns a summary of all expired items in the system.
+ */
+export function getGlobalExpiryNotificationSummary(products: Product[]) {
+  return products.reduce((acc, p) => {
+    const summary = getProductExpirySummary(p, 30);
+    if (p.stock > 0) {
+      if (summary.hasExpired) acc.expired++;
+      else if (summary.hasExpiringSoon) acc.expiringSoon++;
+    }
+    return acc;
+  }, { expired: 0, expiringSoon: 0 });
+}

@@ -73,6 +73,7 @@ export const BatchInventoryView: React.FC = () => {
     formatCurrency,
     openPrintModal,
     addExpiredReturnLog,
+    updateProductBatches,
     showToast,
     currentUser,
   } = useApp();
@@ -598,6 +599,36 @@ export const BatchInventoryView: React.FC = () => {
         'error'
       );
       return;
+    }
+
+    // Update product batches to reflect the write-off
+    const product = products.find(p => p.id === writeOffModalItem.productId);
+    if (product) {
+      let updatedBatches: ProductBatch[] = [];
+      if (product.batches && product.batches.length > 0) {
+        updatedBatches = product.batches.map(b => {
+          if (b.id === writeOffModalItem.batchId) {
+            return { ...b, stock: Math.max(0, b.stock - writeOffQty) };
+          }
+          return b;
+        });
+      } else {
+        // Handle default batch case
+        updatedBatches = [{
+          id: `batch-init-${product.id}`,
+          batchNumber: product.batchNumber || 'B-01',
+          expDate: product.expDate || '',
+          purchaseDate: product.createdAt || new Date().toISOString().split('T')[0],
+          purchaseInvoiceNo: 'INITIAL-STOCK',
+          purchasePrice: product.purchasePrice || 0,
+          salesPrice: product.salesPrice || 0,
+          stock: Math.max(0, product.stock - writeOffQty),
+          initialStock: product.stock,
+          supplierName: 'Initial Inventory',
+          createdAt: product.createdAt,
+        }];
+      }
+      updateProductBatches(product.id, updatedBatches);
     }
 
     addExpiredReturnLog({

@@ -32,6 +32,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { VoucherSearchModal } from '../common/VoucherSearchModal';
+import { getGlobalExpiryNotificationSummary } from '../../utils/dateUtils';
 import { isTabAllowed, getFirstAllowedTab } from '../../utils/permissions';
 
 interface NavbarProps {
@@ -353,6 +354,36 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onOpenKeyboardS
             <Settings className="w-4 h-4" />
           </button>
         )}
+
+        {/* Expiry Alerts Notification */}
+        {(() => {
+          const expiryAlerts = getGlobalExpiryNotificationSummary(products);
+          if (expiryAlerts.expired === 0 && expiryAlerts.expiringSoon === 0) return null;
+          
+          return (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('reports');
+              }}
+              className={`p-2 rounded-lg transition-all cursor-pointer relative group flex items-center gap-1.5 ${
+                expiryAlerts.expired > 0 
+                  ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40' 
+                  : 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-900/40'
+              }`}
+              title={language === 'bn' ? `${expiryAlerts.expired}টি মেয়াদ শেষ ও ${expiryAlerts.expiringSoon}টি শীঘ্রই শেষ হবে।` : `${expiryAlerts.expired} Expired & ${expiryAlerts.expiringSoon} Expiring Soon.`}
+            >
+              <AlertTriangle className={`w-4 h-4 ${expiryAlerts.expired > 0 ? 'animate-pulse' : ''}`} />
+              <span className="text-[10px] font-black font-mono">
+                {expiryAlerts.expired > 0 ? expiryAlerts.expired : expiryAlerts.expiringSoon}
+              </span>
+              <div className="absolute -top-1 -right-1 flex h-2 w-2">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${expiryAlerts.expired > 0 ? 'bg-rose-400' : 'bg-amber-400'}`}></span>
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${expiryAlerts.expired > 0 ? 'bg-rose-500' : 'bg-amber-500'}`}></span>
+              </div>
+            </button>
+          );
+        })()}
 
         {/* Cloud Auto-Sync & Live SQL Save Status */}
         <div className="flex items-center gap-1">

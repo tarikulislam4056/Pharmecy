@@ -439,7 +439,18 @@ export const BatchManagementModal: React.FC<BatchManagementModalProps> = ({
                 <input
                   type="date"
                   value={newExpDate}
-                  onChange={e => setNewExpDate(e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setNewExpDate(val);
+                    if (val && new Date(val) < new Date(new Date().setHours(0,0,0,0))) {
+                      showToast(
+                        language === 'bn' 
+                          ? 'সতর্কতা: মেয়াদের তারিখ আজকের আগের একটি তারিখ!' 
+                          : 'Warning: Expiry date is set to a past date!', 
+                        'warning'
+                      );
+                    }
+                  }}
                   className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs focus:outline-none focus:border-indigo-500"
                 />
               </div>
