@@ -6343,14 +6343,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.removeItem('DOKANPRO_DELETED_INVOICES_ARCHIVE');
       localStorage.removeItem('DOKANPRO_DELETED_PURCHASES_ARCHIVE');
       localStorage.removeItem('DOKANPRO_DELETED_PRODUCT_IDS');
+      localStorage.removeItem('dokanpro_disease_master');
+      localStorage.removeItem('dokanpro_disease_categories');
     } catch (e) {
       console.warn('Failed to save clean state', e);
     }
 
     // Immediately push wipe state to server to clear server snapshot & database.sql
-    const activeUrl = companySettings.apiEndpoint || localStorage.getItem('DOKANPRO_ERP_API_ENDPOINT') || getActiveApiEndpoint();
-    if (activeUrl) {
-      const endpoint = activeUrl.includes('?') ? `${activeUrl}&action=sync_all` : `${activeUrl}?action=sync_all`;
+    const targetsToNotify = new Set<string>();
+    targetsToNotify.add('/api/sync');
+    const customEndpoint = companySettings.apiEndpoint || localStorage.getItem('DOKANPRO_ERP_API_ENDPOINT');
+    if (customEndpoint) targetsToNotify.add(customEndpoint);
+    const activeUrl = getActiveApiEndpoint();
+    if (activeUrl) targetsToNotify.add(activeUrl);
+
+    targetsToNotify.forEach(url => {
+      const endpoint = url.includes('?') ? `${url}&action=sync_all` : `${url}?action=sync_all`;
       fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -6367,9 +6375,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         })
         .catch(err => {
-          console.warn('Reset sync push to server notice:', err);
+          console.warn('Reset sync push notice for endpoint:', url, err);
         });
-    }
+    });
 
     // Broadcast reset to all other open browser tabs
     try {
