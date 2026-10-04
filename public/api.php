@@ -22,9 +22,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Database Configuration - Change according to your hosting/cPanel
 // -------------------------------------------------------------
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');           // Your cPanel/MySQL Database Username
-define('DB_PASS', '');               // Your cPanel/MySQL Database Password
-define('DB_NAME', 'dokanpro_erp_db');// Your Database Name
+define('DB_USER', 'renttop1_erp');     // Your cPanel/MySQL Database Username
+define('DB_PASS', 'renttop1_erp');     // Your cPanel/MySQL Database Password
+define('DB_NAME', 'renttop1_erp');     // Your Database Name
 
 // Connect to MySQL
 $pdo = null;
@@ -330,66 +330,121 @@ switch ($action) {
                 $sqlContent .= "\n";
             }
 
-            // Products
+            // Products & Medicines
             if (isset($input['products']) && is_array($input['products'])) {
                 $sqlContent .= "-- --------------------------------------------------------\n-- Table: products\n-- --------------------------------------------------------\n";
                 $sqlContent .= "DROP TABLE IF EXISTS `products`;\n";
                 $sqlContent .= "CREATE TABLE `products` (\n";
                 $sqlContent .= "  `id` varchar(50) NOT NULL PRIMARY KEY,\n";
                 $sqlContent .= "  `sku` varchar(100) NOT NULL,\n";
+                $sqlContent .= "  `barcode` varchar(100) DEFAULT NULL,\n";
                 $sqlContent .= "  `name` varchar(255) NOT NULL,\n";
                 $sqlContent .= "  `nameBn` varchar(255) DEFAULT NULL,\n";
+                $sqlContent .= "  `medicine` varchar(255) DEFAULT NULL,\n";
+                $sqlContent .= "  `medicine_name` varchar(255) DEFAULT NULL,\n";
                 $sqlContent .= "  `categoryId` varchar(50) DEFAULT NULL,\n";
                 $sqlContent .= "  `categoryName` varchar(150) DEFAULT NULL,\n";
                 $sqlContent .= "  `purchasePrice` decimal(12,2) NOT NULL DEFAULT 0.00,\n";
                 $sqlContent .= "  `salesPrice` decimal(12,2) NOT NULL DEFAULT 0.00,\n";
-                $sqlContent .= "  `stock` decimal(12,2) NOT NULL DEFAULT 0.00,\n";
-                $sqlContent .= "  `unit` varchar(50) DEFAULT 'Pcs',\n";
-                $sqlContent .= "  `minStock` decimal(12,2) DEFAULT 5.00,\n";
-                $sqlContent .= "  `reorderLevel` decimal(12,2) DEFAULT 5.00,\n";
-                $sqlContent .= "  `barcode` varchar(100) DEFAULT NULL,\n";
-                $sqlContent .= "  `generic` varchar(150) DEFAULT NULL,\n";
-                $sqlContent .= "  `genericName` varchar(150) DEFAULT NULL,\n";
-                $sqlContent .= "  `manufacturer` varchar(150) DEFAULT NULL,\n";
-                $sqlContent .= "  `rackLocation` varchar(100) DEFAULT NULL,\n";
-                $sqlContent .= "  `expDate` varchar(50) DEFAULT NULL,\n";
-                $sqlContent .= "  `mfgDate` varchar(50) DEFAULT NULL,\n";
-                $sqlContent .= "  `batchNumber` varchar(100) DEFAULT NULL,\n";
                 $sqlContent .= "  `discount` decimal(12,2) DEFAULT 0.00,\n";
                 $sqlContent .= "  `discountType` varchar(20) DEFAULT 'percentage',\n";
+                $sqlContent .= "  `expDate` varchar(50) DEFAULT NULL,\n";
+                $sqlContent .= "  `generic` varchar(150) DEFAULT NULL,\n";
+                $sqlContent .= "  `manufacturer` varchar(150) DEFAULT NULL,\n";
+                $sqlContent .= "  `dosageForm` varchar(100) DEFAULT NULL,\n";
+                $sqlContent .= "  `strength` varchar(100) DEFAULT NULL,\n";
+                $sqlContent .= "  `rackLocation` varchar(100) DEFAULT NULL,\n";
+                $sqlContent .= "  `stripSize` int(11) DEFAULT NULL,\n";
+                $sqlContent .= "  `stock` decimal(12,2) NOT NULL DEFAULT 0.00,\n";
+                $sqlContent .= "  `unit` varchar(50) DEFAULT 'Pcs',\n";
+                $sqlContent .= "  `reorderLevel` decimal(12,2) DEFAULT 5.00,\n";
+                $sqlContent .= "  `batchNumber` varchar(100) DEFAULT NULL,\n";
                 $sqlContent .= "  `batches_json` longtext DEFAULT NULL,\n";
                 $sqlContent .= "  `description` text DEFAULT NULL,\n";
                 $sqlContent .= "  `imageUrl` text DEFAULT NULL\n";
                 $sqlContent .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n\n";
 
                 foreach ($input['products'] as $p) {
+                    $medName = !empty($p['name']) ? $p['name'] : (!empty($p['medicine']) ? $p['medicine'] : 'Medicine Item');
                     $batchesJson = isset($p['batches']) && is_array($p['batches']) ? json_encode($p['batches'], JSON_UNESCAPED_UNICODE) : null;
-                    $sqlContent .= "INSERT INTO `products` (`id`, `sku`, `name`, `nameBn`, `categoryId`, `categoryName`, `purchasePrice`, `salesPrice`, `stock`, `unit`, `minStock`, `reorderLevel`, `barcode`, `generic`, `genericName`, `manufacturer`, `rackLocation`, `expDate`, `mfgDate`, `batchNumber`, `discount`, `discountType`, `batches_json`, `description`, `imageUrl`) VALUES (" .
+                    $sqlContent .= "INSERT INTO `products` (`id`, `sku`, `barcode`, `name`, `nameBn`, `medicine`, `medicine_name`, `categoryId`, `categoryName`, `purchasePrice`, `salesPrice`, `discount`, `discountType`, `expDate`, `generic`, `manufacturer`, `dosageForm`, `strength`, `rackLocation`, `stripSize`, `stock`, `unit`, `reorderLevel`, `batchNumber`, `batches_json`, `description`, `imageUrl`) VALUES (" .
                         p_esc($p['id'] ?? '') . ", " .
                         p_esc($p['sku'] ?? '') . ", " .
-                        p_esc($p['name'] ?? '') . ", " .
+                        p_esc($p['barcode'] ?? '') . ", " .
+                        p_esc($medName) . ", " .
                         p_esc($p['nameBn'] ?? '') . ", " .
+                        p_esc($medName) . ", " .
+                        p_esc($medName) . ", " .
                         p_esc($p['categoryId'] ?? '') . ", " .
+                        p_esc($p['categoryName'] ?? '') . ", " .
+                        (float)($p['purchasePrice'] ?? 0) . ", " .
+                        (float)($p['salesPrice'] ?? 0) . ", " .
+                        (float)($p['discount'] ?? 0) . ", " .
+                        p_esc($p['discountType'] ?? 'percentage') . ", " .
+                        p_esc($p['expDate'] ?? '') . ", " .
+                        p_esc($p['generic'] ?? ($p['genericName'] ?? '')) . ", " .
+                        p_esc($p['manufacturer'] ?? '') . ", " .
+                        p_esc($p['dosageForm'] ?? '') . ", " .
+                        p_esc($p['strength'] ?? '') . ", " .
+                        p_esc($p['rackLocation'] ?? '') . ", " .
+                        (int)($p['stripSize'] ?? 0) . ", " .
+                        (float)($p['stock'] ?? 0) . ", " .
+                        p_esc($p['unit'] ?? 'Pcs') . ", " .
+                        (float)($p['reorderLevel'] ?? 5) . ", " .
+                        p_esc($p['batchNumber'] ?? '') . ", " .
+                        ($batchesJson !== null ? p_esc($batchesJson) : "NULL") . ", " .
+                        p_esc($p['description'] ?? '') . ", " .
+                        p_esc($p['imageUrl'] ?? ($p['image'] ?? '')) . ");\n";
+                }
+                $sqlContent .= "\n";
+
+                // Dedicated Medicines Table
+                $sqlContent .= "-- --------------------------------------------------------\n-- Table: medicines\n-- --------------------------------------------------------\n";
+                $sqlContent .= "DROP TABLE IF EXISTS `medicines`;\n";
+                $sqlContent .= "CREATE TABLE `medicines` (\n";
+                $sqlContent .= "  `id` varchar(50) NOT NULL PRIMARY KEY,\n";
+                $sqlContent .= "  `medicine` varchar(255) NOT NULL,\n";
+                $sqlContent .= "  `medicine_name` varchar(255) NOT NULL,\n";
+                $sqlContent .= "  `sku` varchar(100) NOT NULL,\n";
+                $sqlContent .= "  `barcode` varchar(100) DEFAULT NULL,\n";
+                $sqlContent .= "  `generic` varchar(255) DEFAULT NULL,\n";
+                $sqlContent .= "  `brand` varchar(255) DEFAULT NULL,\n";
+                $sqlContent .= "  `manufacturer` varchar(255) DEFAULT NULL,\n";
+                $sqlContent .= "  `strength` varchar(100) DEFAULT NULL,\n";
+                $sqlContent .= "  `dosage_form` varchar(100) DEFAULT NULL,\n";
+                $sqlContent .= "  `category` varchar(255) DEFAULT NULL,\n";
+                $sqlContent .= "  `purchase_price` decimal(12,2) NOT NULL DEFAULT 0.00,\n";
+                $sqlContent .= "  `sales_price` decimal(12,2) NOT NULL DEFAULT 0.00,\n";
+                $sqlContent .= "  `stock` decimal(12,2) NOT NULL DEFAULT 0.00,\n";
+                $sqlContent .= "  `unit` varchar(50) DEFAULT 'Pcs',\n";
+                $sqlContent .= "  `exp_date` varchar(50) DEFAULT NULL,\n";
+                $sqlContent .= "  `batch_no` varchar(100) DEFAULT NULL,\n";
+                $sqlContent .= "  `rack_location` varchar(100) DEFAULT NULL,\n";
+                $sqlContent .= "  `created_at` varchar(100) DEFAULT NULL\n";
+                $sqlContent .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n\n";
+
+                foreach ($input['products'] as $p) {
+                    $medName = !empty($p['name']) ? $p['name'] : (!empty($p['medicine']) ? $p['medicine'] : 'Medicine Item');
+                    $sqlContent .= "INSERT INTO `medicines` (`id`, `medicine`, `medicine_name`, `sku`, `barcode`, `generic`, `brand`, `manufacturer`, `strength`, `dosage_form`, `category`, `purchase_price`, `sales_price`, `stock`, `unit`, `exp_date`, `batch_no`, `rack_location`, `created_at`) VALUES (" .
+                        p_esc($p['id'] ?? '') . ", " .
+                        p_esc($medName) . ", " .
+                        p_esc($medName) . ", " .
+                        p_esc($p['sku'] ?? '') . ", " .
+                        p_esc($p['barcode'] ?? '') . ", " .
+                        p_esc($p['generic'] ?? ($p['genericName'] ?? '')) . ", " .
+                        p_esc($p['manufacturer'] ?? '') . ", " .
+                        p_esc($p['manufacturer'] ?? '') . ", " .
+                        p_esc($p['strength'] ?? '') . ", " .
+                        p_esc($p['dosageForm'] ?? '') . ", " .
                         p_esc($p['categoryName'] ?? '') . ", " .
                         (float)($p['purchasePrice'] ?? 0) . ", " .
                         (float)($p['salesPrice'] ?? 0) . ", " .
                         (float)($p['stock'] ?? 0) . ", " .
                         p_esc($p['unit'] ?? 'Pcs') . ", " .
-                        (float)($p['minStock'] ?? 5) . ", " .
-                        (float)($p['reorderLevel'] ?? 5) . ", " .
-                        p_esc($p['barcode'] ?? '') . ", " .
-                        p_esc($p['generic'] ?? $p['genericName'] ?? '') . ", " .
-                        p_esc($p['genericName'] ?? $p['generic'] ?? '') . ", " .
-                        p_esc($p['manufacturer'] ?? '') . ", " .
-                        p_esc($p['rackLocation'] ?? '') . ", " .
                         p_esc($p['expDate'] ?? '') . ", " .
-                        p_esc($p['mfgDate'] ?? '') . ", " .
                         p_esc($p['batchNumber'] ?? '') . ", " .
-                        (float)($p['discount'] ?? 0) . ", " .
-                        p_esc($p['discountType'] ?? 'percentage') . ", " .
-                        ($batchesJson !== null ? p_esc($batchesJson) : "NULL") . ", " .
-                        p_esc($p['description'] ?? '') . ", " .
-                        p_esc($p['imageUrl'] ?? $p['image'] ?? '') . ");\n";
+                        p_esc($p['rackLocation'] ?? '') . ", " .
+                        p_esc($p['createdAt'] ?? date('Y-m-d H:i:s')) . ");\n";
                 }
                 $sqlContent .= "\n";
             }
