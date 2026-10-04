@@ -779,11 +779,14 @@ export const QuotationView: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
-                <th className="py-4 px-6">{language === 'bn' ? 'কোটেশন ও তারিখ' : 'QT # & Date'}</th>
+                <th className="py-4 px-6">{language === 'bn' ? 'কোটেশন নং' : 'QT #'}</th>
+                <th className="py-4 px-6">{language === 'bn' ? 'তারিখ' : 'Date'}</th>
                 <th className="py-4 px-6">{language === 'bn' ? 'সেল ইনভয়েস #' : 'Sale INV #'}</th>
                 <th className="py-4 px-6">{language === 'bn' ? 'পেমেন্ট টাইপ' : 'Payment Type'}</th>
-                <th className="py-4 px-6">{language === 'bn' ? 'কাস্টমার বিবরণ' : 'Customer Details'}</th>
+                <th className="py-4 px-6">{language === 'bn' ? 'কাস্টমার' : 'Customer'}</th>
+                <th className="py-4 px-6">{language === 'bn' ? 'ফোন' : 'Phone'}</th>
                 <th className="py-4 px-6">{language === 'bn' ? 'আইটেম' : 'Items'}</th>
+                <th className="py-4 px-6 text-right">{language === 'bn' ? 'গড় ইউনিট দর' : 'Avg. Unit Price'}</th>
                 <th className="py-4 px-6">{language === 'bn' ? 'ইউজার তথ্য' : 'User Info'}</th>
                 <th className="py-4 px-6 text-right">{language === 'bn' ? 'মোট টাকা' : 'Total Amount'}</th>
                 <th className="py-4 px-6 text-center">{language === 'bn' ? 'অবস্থা' : 'Status'}</th>
@@ -793,7 +796,7 @@ export const QuotationView: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredQuotations.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-20 text-center text-slate-400">
+                  <td colSpan={11} className="py-20 text-center text-slate-400">
                     <div className="flex flex-col items-center gap-2">
                       <ClipboardList className="w-12 h-12 opacity-20" />
                       <p>{language === 'bn' ? 'কোনো কোটেশন পাওয়া যায়নি।' : 'No quotations found.'}</p>
@@ -805,8 +808,9 @@ export const QuotationView: React.FC = () => {
                   <tr key={q.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
                     <td className="py-4 px-6">
                       <div className="font-bold text-slate-900 dark:text-white">{q.quotationNumber}</div>
-                      <div className="text-[10px] text-slate-500 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="text-[11px] text-slate-500 font-mono">
                         {q.date}
                       </div>
                     </td>
@@ -848,15 +852,22 @@ export const QuotationView: React.FC = () => {
                     </td>
                     <td className="py-4 px-6">
                       <div className="font-semibold text-slate-900 dark:text-white">{q.customerName}</div>
-                      <div className="text-[10px] text-slate-500 flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        {q.customerPhone}
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="text-[11px] text-slate-500 font-mono">
+                        {q.customerPhone || '---'}
                       </div>
                     </td>
                     <td className="py-4 px-6">
                       <div className="text-xs text-slate-600 dark:text-slate-400">
                         {q.items.length} {language === 'bn' ? 'টি আইটেম' : 'Items'}
+                        <span className="block text-[10px] text-slate-400 font-bold">
+                          {q.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)} {language === 'bn' ? 'পিস' : 'Pcs'}
+                        </span>
                       </div>
+                    </td>
+                    <td className="py-4 px-6 text-right font-mono text-xs">
+                      {formatCurrency(q.items.length > 0 ? (q.items.reduce((sum, item) => sum + item.unitPrice, 0) / q.items.length) : 0)}
                     </td>
                     <td className="py-4 px-6">
                       <MultiUserAuditTrail

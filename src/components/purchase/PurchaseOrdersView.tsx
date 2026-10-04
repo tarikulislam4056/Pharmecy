@@ -6,7 +6,7 @@ import { MultiUserAuditTrail } from '../common/MultiUserAuditTrail';
 import { ShoppingCart, Plus, Search, Filter, Printer, Download, Trash2, CheckCircle2, Send, Clock, AlertTriangle, FileText, ArrowRight, X, Building2, Phone, Calendar, Receipt, CreditCard, Wallet } from 'lucide-react';
 
 export const PurchaseOrdersView: React.FC = () => {
-  const { purchaseOrders, purchaseInvoices, addPurchaseOrder, updatePurchaseOrderStatus, convertPOToPurchaseBill, deletePurchaseOrder, parties, products, wallets, language, showToast, currentUser, users, openPrintModal } = useApp();
+  const { purchaseOrders, purchaseInvoices, addPurchaseOrder, updatePurchaseOrderStatus, convertPOToPurchaseBill, deletePurchaseOrder, parties, products, wallets, language, showToast, currentUser, users, openPrintModal, formatCurrency } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
@@ -581,11 +581,14 @@ export const PurchaseOrdersView: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-850 text-slate-500 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
-                <th className="py-3 px-4">{language === 'bn' ? 'PO নম্বর ও তারিখ' : 'PO # & Date'}</th>
+                <th className="py-3 px-4">{language === 'bn' ? 'PO নম্বর' : 'PO #'}</th>
+                <th className="py-3 px-4">{language === 'bn' ? 'তারিখ' : 'Date'}</th>
                 <th className="py-3 px-4">{language === 'bn' ? 'বিল নম্বর' : 'Bill #'}</th>
-                <th className="py-3 px-4">{language === 'bn' ? 'মহাজন / সাপ্লায়ার' : 'Supplier Details'}</th>
+                <th className="py-3 px-4">{language === 'bn' ? 'মহাজন' : 'Supplier'}</th>
+                <th className="py-3 px-4">{language === 'bn' ? 'ফোন নম্বর' : 'Phone'}</th>
                 <th className="py-3 px-4">{language === 'bn' ? 'প্রত্যাশিত ডেলিভারি' : 'Expected Delivery'}</th>
-                <th className="py-3 px-4">{language === 'bn' ? 'আইটেম সংখ্যা' : 'Items'}</th>
+                <th className="py-3 px-4">{language === 'bn' ? 'আইটেম' : 'Items'}</th>
+                <th className="py-3 px-4 text-right">{language === 'bn' ? 'গড় ইউনিট দর' : 'Avg. Unit Price'}</th>
                 <th className="py-3 px-4 text-right">{language === 'bn' ? 'সর্বমোট মূল্য' : 'Grand Total'}</th>
                 <th className="py-3 px-4 text-center">{language === 'bn' ? 'তৈরি / অনুমোদন' : 'Created / Approved'}</th>
                 <th className="py-3 px-4 text-center">{language === 'bn' ? 'অর্ডার স্ট্যাটাস' : 'Order Status'}</th>
@@ -596,7 +599,7 @@ export const PurchaseOrdersView: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredPOs.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-16 text-center text-slate-400 font-medium">
+                  <td colSpan={13} className="py-16 text-center text-slate-400 font-medium">
                     {language === 'bn' ? 'কোনো ক্রয় আদেশ পাওয়া যায়নি।' : 'No purchase orders found matching filters.'}
                   </td>
                 </tr>
@@ -613,9 +616,9 @@ export const PurchaseOrdersView: React.FC = () => {
                         <div className="font-bold text-slate-900 dark:text-white font-mono">
                           {po.poNumber}
                         </div>
-                        <div className="text-[10px] text-slate-400">
-                          {po.date}
-                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-[10px] text-slate-500 font-mono">
+                        {po.date}
                       </td>
                       <td className="py-3 px-4">
                         {po.status === 'FULLY_RECEIVED' && payInfo.billNumber ? (
@@ -630,17 +633,30 @@ export const PurchaseOrdersView: React.FC = () => {
                         <div className="font-semibold text-slate-900 dark:text-white">
                           {po.supplierName}
                         </div>
-                        <div className="text-[10px] text-slate-400 font-mono">
-                          {po.supplierPhone}
-                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-[10px] text-slate-400 font-mono">
+                        {po.supplierPhone}
                       </td>
                       <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-300">
                         {po.expectedDeliveryDate}
                       </td>
                       <td className="py-3 px-4">
-                        <span className="font-bold text-sky-600 dark:text-sky-400">
-                          {po.items.length} {language === 'bn' ? 'টি পণ্য' : 'items'}
-                        </span>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">
+                          {po.items.length} {language === 'bn' ? 'টি আইটেম' : 'Items'}
+                          <span className="block text-[10px] text-slate-400 font-bold">
+                            {po.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)} {language === 'bn' ? 'পিস' : 'Pcs'}
+                          </span>
+                          <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px] max-h-16 overflow-y-auto">
+                            {po.items.map((item, idx) => (
+                              <div key={idx} className="truncate" title={`${item.name}: ${formatCurrency(item.unitPrice)}`}>
+                                {item.name}: <span className="font-mono font-bold text-slate-700 dark:text-slate-200">{formatCurrency(item.unitPrice)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono text-xs">
+                        {formatCurrency(po.items.length > 0 ? (po.items.reduce((sum, item) => sum + item.unitPrice, 0) / po.items.length) : 0)}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
                         ৳{po.grandTotal.toLocaleString()}

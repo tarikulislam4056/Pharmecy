@@ -1533,6 +1533,7 @@ export const PurchaseListView: React.FC<PurchaseListViewProps> = ({
                   <th className="py-3 px-4">Challan / Ref</th>
                   <th className="py-3 px-4">Date</th>
                   <th className="py-3 px-4">Supplier</th>
+                  <th className="py-3 px-4">{language === 'bn' ? 'ফোন নম্বর' : 'Phone'}</th>
                   <th className="py-3 px-4">{language === 'bn' ? 'তৈরি করেছেন (User)' : 'Created By'}</th>
                   <th className="py-3 px-4 text-center">Items & Breakdown</th>
                   <th className="py-3 px-4 text-right">Grand Total</th>
@@ -1545,7 +1546,7 @@ export const PurchaseListView: React.FC<PurchaseListViewProps> = ({
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {filteredPurchases.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="py-12 text-center text-zinc-400">
+                    <td colSpan={12} className="py-12 text-center text-zinc-400">
                       {language === 'bn' ? 'কোনো ক্রয় বিল পাওয়া যায়নি।' : 'No purchase bills found matching current filters.'}
                     </td>
                   </tr>
@@ -1564,7 +1565,9 @@ export const PurchaseListView: React.FC<PurchaseListViewProps> = ({
                         <td className="py-3 px-4 text-zinc-500 whitespace-nowrap">{pur.date}</td>
                         <td className="py-3 px-4">
                           <div className="font-semibold text-zinc-900 dark:text-white">{pur.supplierName}</div>
-                          {pur.supplierPhone && <div className="text-[10px] text-zinc-400">{pur.supplierPhone}</div>}
+                        </td>
+                        <td className="py-3 px-4 text-[10px] text-zinc-500 font-mono">
+                          {pur.supplierPhone || '---'}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">

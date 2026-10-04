@@ -749,6 +749,7 @@ export const SalesListView: React.FC<SalesListViewProps> = ({
                     <th className="py-3.5 px-4">{language === 'bn' ? 'চালান নম্বর (INV #)' : 'Invoice #'}</th>
                     <th className="py-3.5 px-4">{language === 'bn' ? 'তারিখ ও সময়' : 'Date & Time'}</th>
                     <th className="py-3.5 px-4">{language === 'bn' ? 'গ্রাহক / কাস্টমার' : 'Customer'}</th>
+                    <th className="py-3.5 px-4">{language === 'bn' ? 'ফোন নম্বর' : 'Phone'}</th>
                     <th className="py-3.5 px-4">{language === 'bn' ? 'তৈরি করেছেন' : 'Created By'}</th>
                     <th className="py-3.5 px-4 text-center">{language === 'bn' ? 'পণ্য ও পরিমাণ' : 'Items'}</th>
                     <th className="py-3.5 px-4 text-right">{language === 'bn' ? 'মোট বিক্রয়' : 'Grand Total'}</th>
@@ -761,7 +762,7 @@ export const SalesListView: React.FC<SalesListViewProps> = ({
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filteredInvoices.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="py-16 text-center text-slate-400 dark:text-slate-500">
+                      <td colSpan={11} className="py-16 text-center text-slate-400 dark:text-slate-500">
                         <div className="flex flex-col items-center justify-center gap-2">
                           <FileText className="w-8 h-8 text-slate-300 dark:text-slate-600" />
                           <span className="font-semibold text-sm">
@@ -815,12 +816,9 @@ export const SalesListView: React.FC<SalesListViewProps> = ({
                           {/* Customer */}
                           <td className="py-3.5 px-4">
                             <div className="font-bold text-slate-900 dark:text-white">{inv.customerName}</div>
-                            {inv.customerPhone && (
-                              <div className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
-                                <Phone className="w-2.5 h-2.5" />
-                                <span>{inv.customerPhone}</span>
-                              </div>
-                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-[11px] text-slate-500 font-mono">
+                            {inv.customerPhone || '---'}
                           </td>
 
                           {/* Created By / Cashier Column */}
