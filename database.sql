@@ -45,9 +45,12 @@ CREATE TABLE `company_settings` (
   `invoiceCustomPrimaryColor` varchar(20) DEFAULT '#4F46E5',
   `invoiceCustomAccentColor` varchar(20) DEFAULT '#06B6D4',
   `dashboardColorTheme` varchar(50) DEFAULT 'INDIGO',
+  `sidebarColorTheme` varchar(50) DEFAULT 'INDIGO',
+  `sidebarCustomColor` varchar(20) DEFAULT '#4F46E5',
   `smsSenderId` varchar(100) DEFAULT NULL,
   `apiEndpoint` text DEFAULT NULL,
   `autoSyncEnabled` tinyint(1) DEFAULT 1,
+  `autoSyncIntervalSeconds` int(11) DEFAULT 5,
   `productGenerics_json` longtext DEFAULT NULL,
   `productManufacturers_json` longtext DEFAULT NULL,
   `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -69,6 +72,9 @@ CREATE TABLE `users` (
   `permissions_json` longtext DEFAULT NULL,
   `subPermissions_json` longtext DEFAULT NULL,
   `avatar` longtext DEFAULT NULL,
+  `lastLogin` varchar(50) DEFAULT NULL,
+  `lowStockEmailAlerts` tinyint(1) DEFAULT 0,
+  `lowStockSmsAlerts` tinyint(1) DEFAULT 0,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -97,6 +103,8 @@ CREATE TABLE `products` (
   `barcode` varchar(100) DEFAULT NULL,
   `name` varchar(255) NOT NULL,
   `nameBn` varchar(255) DEFAULT NULL,
+  `medicine` varchar(255) DEFAULT NULL,
+  `medicine_name` varchar(255) DEFAULT NULL,
   `categoryId` varchar(50) DEFAULT NULL,
   `categoryName` varchar(255) DEFAULT NULL,
   `purchasePrice` decimal(12,2) NOT NULL DEFAULT 0.00,
@@ -106,6 +114,16 @@ CREATE TABLE `products` (
   `expDate` varchar(50) DEFAULT NULL,
   `generic` varchar(255) DEFAULT NULL,
   `manufacturer` varchar(255) DEFAULT NULL,
+  `dosageForm` varchar(100) DEFAULT NULL,
+  `strength` varchar(100) DEFAULT NULL,
+  `rackLocation` varchar(100) DEFAULT NULL,
+  `stripSize` int(11) DEFAULT NULL,
+  `diseases_json` longtext DEFAULT NULL,
+  `dosageSchedule` varchar(255) DEFAULT NULL,
+  `mealTiming` varchar(255) DEFAULT NULL,
+  `duration` varchar(100) DEFAULT NULL,
+  `instructions` text DEFAULT NULL,
+  `precautions` text DEFAULT NULL,
   `reorderLevel` decimal(12,2) NOT NULL DEFAULT 5.00,
   `stock` decimal(12,2) NOT NULL DEFAULT 0.00,
   `unit` varchar(50) DEFAULT 'Pcs',
@@ -114,7 +132,39 @@ CREATE TABLE `products` (
   `image` longtext DEFAULT NULL,
   `imageUrl` longtext DEFAULT NULL,
   `description` text DEFAULT NULL,
+  `hasWarranty` tinyint(1) DEFAULT 0,
+  `warrantyDuration` int(11) DEFAULT NULL,
+  `warrantyUnit` varchar(50) DEFAULT NULL,
+  `warrantyType` varchar(50) DEFAULT NULL,
+  `warrantyTerms` text DEFAULT NULL,
+  `requiresSerialNo` tinyint(1) DEFAULT 0,
   `createdBy` varchar(100) DEFAULT NULL,
+  `created_at` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table structure for `medicines`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `medicines`;
+CREATE TABLE `medicines` (
+  `id` varchar(50) NOT NULL PRIMARY KEY,
+  `medicine` varchar(255) NOT NULL,
+  `medicine_name` varchar(255) NOT NULL,
+  `sku` varchar(100) NOT NULL,
+  `barcode` varchar(100) DEFAULT NULL,
+  `generic` varchar(255) DEFAULT NULL,
+  `brand` varchar(255) DEFAULT NULL,
+  `manufacturer` varchar(255) DEFAULT NULL,
+  `strength` varchar(100) DEFAULT NULL,
+  `dosage_form` varchar(100) DEFAULT NULL,
+  `category` varchar(255) DEFAULT NULL,
+  `purchase_price` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `sales_price` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `stock` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `unit` varchar(50) DEFAULT 'Pcs',
+  `exp_date` varchar(50) DEFAULT NULL,
+  `batch_no` varchar(100) DEFAULT NULL,
+  `rack_location` varchar(100) DEFAULT NULL,
   `created_at` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

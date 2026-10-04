@@ -103,6 +103,8 @@ CREATE TABLE `products` (
   `barcode` varchar(100) DEFAULT NULL,
   `name` varchar(255) NOT NULL,
   `nameBn` varchar(255) DEFAULT NULL,
+  `medicine` varchar(255) DEFAULT NULL,
+  `medicine_name` varchar(255) DEFAULT NULL,
   `categoryId` varchar(50) DEFAULT NULL,
   `categoryName` varchar(255) DEFAULT NULL,
   `purchasePrice` decimal(12,2) NOT NULL DEFAULT 0.00,
@@ -137,6 +139,32 @@ CREATE TABLE `products` (
   `warrantyTerms` text DEFAULT NULL,
   `requiresSerialNo` tinyint(1) DEFAULT 0,
   `createdBy` varchar(100) DEFAULT NULL,
+  `created_at` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table structure for `medicines`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `medicines`;
+CREATE TABLE `medicines` (
+  `id` varchar(50) NOT NULL PRIMARY KEY,
+  `medicine` varchar(255) NOT NULL,
+  `medicine_name` varchar(255) NOT NULL,
+  `sku` varchar(100) NOT NULL,
+  `barcode` varchar(100) DEFAULT NULL,
+  `generic` varchar(255) DEFAULT NULL,
+  `brand` varchar(255) DEFAULT NULL,
+  `manufacturer` varchar(255) DEFAULT NULL,
+  `strength` varchar(100) DEFAULT NULL,
+  `dosage_form` varchar(100) DEFAULT NULL,
+  `category` varchar(255) DEFAULT NULL,
+  `purchase_price` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `sales_price` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `stock` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `unit` varchar(50) DEFAULT 'Pcs',
+  `exp_date` varchar(50) DEFAULT NULL,
+  `batch_no` varchar(100) DEFAULT NULL,
+  `rack_location` varchar(100) DEFAULT NULL,
   `created_at` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
