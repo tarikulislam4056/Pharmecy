@@ -2245,16 +2245,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Instant background Auto-Push to Server & SQL file on entries/changes
   useEffect(() => {
-    // Guard: Never push on boot until initial pull has completed, ensuring other devices don't overwrite server data
-    if (!hasCompletedInitialServerSyncRef.current) return;
     if (companySettings.autoSyncEnabled === false) return;
     const activeUrl = companySettings.apiEndpoint || localStorage.getItem('DOKANPRO_ERP_API_ENDPOINT') || getActiveApiEndpoint();
     if (!activeUrl) return;
 
-    // 500ms debounce ensures smooth typing experience while reliably auto-syncing to server
+    // 400ms debounce ensures smooth typing experience while reliably auto-syncing to server
     const pushTimer = setTimeout(() => {
       triggerServerPush(activeUrl, true);
-    }, 500);
+    }, 400);
 
     return () => clearTimeout(pushTimer);
   }, [
@@ -2354,6 +2352,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString().split('T')[0],
     };
     setProducts(prev => [newProduct, ...prev]);
+    setTimeout(() => {
+      triggerServerPush(undefined, true);
+    }, 100);
     showToast(language === 'bn' ? 'নতুন পণ্য সফলভাবে যুক্ত করা হয়েছে।' : 'Product added successfully.');
     return newProduct;
   };
@@ -2403,6 +2404,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return p;
       })
     );
+    setTimeout(() => {
+      triggerServerPush(undefined, true);
+    }, 100);
     showToast(language === 'bn' ? 'পণ্যের তথ্য আপডেট করা হয়েছে।' : 'Product updated successfully.');
   };
 
