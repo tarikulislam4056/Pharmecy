@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useTranslation } from '../../i18n/translations';
 import { DatePeriodFilter } from '../common/DatePeriodFilter';
 import { BatchReportView } from './BatchReportView';
+import { ExpiryReportView } from './ExpiryReportView';
 import {
   canUserExportReportCsv,
   canUserDownloadReportPdf,
@@ -47,7 +48,8 @@ export type ReportKind =
   | 'pnl'
   | 'cat-sales'
   | 'cat-purchase'
-  | 'party-ledger';
+  | 'party-ledger'
+  | 'expiry-report';
 
 interface ReportsViewProps {
   initialReportType?: ReportKind;
@@ -3342,6 +3344,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
           </div>
         </div>
       )}
+
+      {/* 9. EXPIRY REPORT */}
+      {reportType === 'expiry-report' && <ExpiryReportView />}
     </div>
   );
 };

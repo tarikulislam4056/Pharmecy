@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { VoucherSearchModal } from '../common/VoucherSearchModal';
 import { DemandForecastWidget } from './DemandForecastWidget';
+import { ExpiryDashboardWidget } from './ExpiryDashboardWidget';
 import { isTabAllowed, hasPermission } from '../../utils/permissions';
 import { ViewTab } from '../../types';
 
@@ -603,6 +604,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
       </div>
+
+      {/* Expiry Tracking Widget */}
+      <ExpiryDashboardWidget products={products} language={language} />
 
       {/* 3. Row 2: Cash In Hand, Total Stock Value, Total Profit, & Total Expense */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
