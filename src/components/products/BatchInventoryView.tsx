@@ -49,6 +49,7 @@ export interface FlattenedBatchItem {
   generic?: string;
   manufacturer?: string;
   unit: string;
+  rackLocation?: string;
   expDate: string;
   mfgDate?: string;
   purchaseDate?: string;
@@ -151,6 +152,7 @@ export const BatchInventoryView: React.FC = () => {
             generic: p.generic,
             manufacturer: p.manufacturer,
             unit: p.unit || 'Pcs',
+            rackLocation: p.rackLocation,
             expDate: b.expDate || p.expDate || '',
             mfgDate: b.mfgDate,
             purchaseDate: b.purchaseDate || p.createdAt,
@@ -183,6 +185,7 @@ export const BatchInventoryView: React.FC = () => {
           generic: p.generic,
           manufacturer: p.manufacturer,
           unit: p.unit || 'Pcs',
+          rackLocation: p.rackLocation,
           expDate: p.expDate || '',
           purchaseDate: p.createdAt,
           purchaseInvoiceNo: 'INITIAL-STOCK',
@@ -219,15 +222,17 @@ export const BatchInventoryView: React.FC = () => {
       const q = searchQuery.trim().toLowerCase();
       result = result.filter(
         (i) =>
-          i.batchNumber.toLowerCase().includes(q) ||
-          i.productName.toLowerCase().includes(q) ||
-          (i.productNameBn && i.productNameBn.toLowerCase().includes(q)) ||
-          i.sku.toLowerCase().includes(q) ||
-          (i.barcode && i.barcode.toLowerCase().includes(q)) ||
-          (i.generic && i.generic.toLowerCase().includes(q)) ||
-          (i.manufacturer && i.manufacturer.toLowerCase().includes(q)) ||
-          (i.purchaseInvoiceNo && i.purchaseInvoiceNo.toLowerCase().includes(q)) ||
-          (i.supplierName && i.supplierName.toLowerCase().includes(q))
+          (i.batchNumber?.toLowerCase() || '').includes(q) ||
+          (i.productName?.toLowerCase() || '').includes(q) ||
+          (i.productNameBn?.toLowerCase() || '').includes(q) ||
+          (i.sku?.toLowerCase() || '').includes(q) ||
+          (i.barcode?.toLowerCase() || '').includes(q) ||
+          (i.generic?.toLowerCase() || '').includes(q) ||
+          (i.manufacturer?.toLowerCase() || '').includes(q) ||
+          (i.categoryName?.toLowerCase() || '').includes(q) ||
+          (i.rackLocation?.toLowerCase() || '').includes(q) ||
+          (i.purchaseInvoiceNo?.toLowerCase() || '').includes(q) ||
+          (i.supplierName?.toLowerCase() || '').includes(q)
       );
     }
 
@@ -1039,8 +1044,8 @@ export const BatchInventoryView: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={
                   language === 'bn'
-                    ? 'ব্যাচ নং, প্রোডাক্ট নাম, SKU, বারকোড, জেনেরিক...'
-                    : 'Search Batch No, Product Name, SKU, Barcode...'
+                    ? 'ব্যাচ নং, নাম, SKU, বারকোড, জেনেরিক, ক্যাটাগরি, র‍্যাক...'
+                    : 'Search Batch, Product, SKU, Barcode, Category, Rack...'
                 }
                 className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
               />
