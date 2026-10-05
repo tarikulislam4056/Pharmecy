@@ -64,7 +64,22 @@ export interface FlattenedBatchItem {
   shelfLifeStatus: 'EXPIRED' | 'CRITICAL' | 'WARNING' | 'GOOD' | 'NO_EXPIRY';
   isFefoPriority: boolean;
   productRef: Product;
+  strength?: string;
+  dosageForm?: string;
+  notes?: string;
 }
+
+// Convert Bengali digits to English digits
+const bnToEnDigits = (str: string): string => {
+  const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  return str.replace(/[০-৯]/g, (d) => String(bnDigits.indexOf(d)));
+};
+
+// Convert English digits to Bengali digits
+const enToBnDigits = (str: string): string => {
+  const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  return str.replace(/[0-9]/g, (d) => bnDigits[Number(d)]);
+};
 
 export const BatchInventoryView: React.FC = () => {
   const {
@@ -82,7 +97,7 @@ export const BatchInventoryView: React.FC = () => {
   // Search and Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'EXPIRED' | 'CRITICAL' | 'WARNING' | 'EXPIRING_30_DAYS' | 'GOOD' | 'NO_EXPIRY'>('ALL');
-  const [stockFilter, setStockFilter] = useState<'ALL' | 'IN_STOCK' | 'OUT_OF_STOCK'>('IN_STOCK');
+  const [stockFilter, setStockFilter] = useState<'ALL' | 'IN_STOCK' | 'OUT_OF_STOCK'>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedGeneric, setSelectedGeneric] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<'FEFO' | 'EXP_DESC' | 'STOCK_DESC' | 'BATCH_ASC' | 'VALUE_DESC'>('FEFO');
@@ -167,6 +182,9 @@ export const BatchInventoryView: React.FC = () => {
             shelfLifeStatus: status,
             isFefoPriority: b.id === fefoBatchId,
             productRef: p,
+            strength: p.strength,
+            dosageForm: p.dosageForm,
+            notes: b.notes,
           });
         });
       } else {
@@ -197,6 +215,9 @@ export const BatchInventoryView: React.FC = () => {
           shelfLifeStatus: status,
           isFefoPriority: fefoBatchId === `default-batch-${p.id}`,
           productRef: p,
+          strength: p.strength,
+          dosageForm: p.dosageForm,
+          notes: undefined,
         });
       }
     });
@@ -217,23 +238,65 @@ export const BatchInventoryView: React.FC = () => {
   const filteredItems = useMemo(() => {
     let result = [...allBatchItems];
 
-    // Search query
+    // Search query - Multi-term, bilingual digits, batch formatting & field-spanning
     if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      result = result.filter(
-        (i) =>
-          (i.batchNumber?.toLowerCase() || '').includes(q) ||
-          (i.productName?.toLowerCase() || '').includes(q) ||
-          (i.productNameBn?.toLowerCase() || '').includes(q) ||
-          (i.sku?.toLowerCase() || '').includes(q) ||
-          (i.barcode?.toLowerCase() || '').includes(q) ||
-          (i.generic?.toLowerCase() || '').includes(q) ||
-          (i.manufacturer?.toLowerCase() || '').includes(q) ||
-          (i.categoryName?.toLowerCase() || '').includes(q) ||
-          (i.rackLocation?.toLowerCase() || '').includes(q) ||
-          (i.purchaseInvoiceNo?.toLowerCase() || '').includes(q) ||
-          (i.supplierName?.toLowerCase() || '').includes(q)
-      );
+      const rawQuery = searchQuery.trim().toLowerCase();
+      const enQuery = bnToEnDigits(rawQuery);
+
+      const queryTerms = rawQuery.split(/\s+/).filter(Boolean);
+      const enQueryTerms = enQuery.split(/\s+/).filter(Boolean);
+
+      result = result.filter((i) => {
+        const prod = i.productRef;
+        const bNo = (i.batchNumber || '').toLowerCase();
+        const bNoClean = bNo.replace(/[^a-z0-9]/gi, '');
+
+        const searchableTokens: string[] = [
+          bNo,
+          bNoClean,
+          `batch ${bNo}`,
+          `batch #${bNo}`,
+          `#${bNo}`,
+          `batch-${bNo}`,
+          i.productName?.toLowerCase() || '',
+          i.productNameBn?.toLowerCase() || '',
+          i.sku?.toLowerCase() || '',
+          i.barcode?.toLowerCase() || '',
+          i.generic?.toLowerCase() || '',
+          i.manufacturer?.toLowerCase() || '',
+          i.categoryName?.toLowerCase() || '',
+          i.rackLocation?.toLowerCase() || '',
+          i.purchaseInvoiceNo?.toLowerCase() || '',
+          i.supplierName?.toLowerCase() || '',
+          i.expDate?.toLowerCase() || '',
+          i.mfgDate?.toLowerCase() || '',
+          i.unit?.toLowerCase() || '',
+          prod?.strength?.toLowerCase() || '',
+          prod?.dosageForm?.toLowerCase() || '',
+          prod?.dosageSchedule?.toLowerCase() || '',
+          ...(prod?.diseases || []).map((d) => d.toLowerCase()),
+          i.notes?.toLowerCase() || '',
+        ];
+
+        const combinedText = searchableTokens.join(' ');
+        const combinedEnText = bnToEnDigits(combinedText);
+        const combinedBnText = enToBnDigits(combinedText);
+
+        return queryTerms.every((term, idx) => {
+          const enTerm = enQueryTerms[idx] || term;
+          const cleanTerm = term.replace(/[^a-z0-9]/gi, '');
+
+          // If the user literally typed "batch" or "#", it's an intentional match for batch context
+          if (term === 'batch' || term === '#') return true;
+
+          return (
+            combinedText.includes(term) ||
+            combinedEnText.includes(enTerm) ||
+            combinedBnText.includes(term) ||
+            (cleanTerm.length > 0 && bNoClean.includes(cleanTerm))
+          );
+        });
+      });
     }
 
     // Shelf life status
@@ -406,7 +469,7 @@ export const BatchInventoryView: React.FC = () => {
   const resetFilters = () => {
     setSearchQuery('');
     setStatusFilter('ALL');
-    setStockFilter('IN_STOCK');
+    setStockFilter('ALL');
     setSelectedCategory('ALL');
     setSelectedGeneric('ALL');
     setSortBy('FEFO');
@@ -1050,13 +1113,19 @@ export const BatchInventoryView: React.FC = () => {
                 className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
               />
               {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1.5 absolute right-2.5 top-1/2 -translate-y-1/2">
+                  <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/70 text-indigo-700 dark:text-indigo-300 font-mono font-bold px-1.5 py-0.5 rounded">
+                    {filteredItems.length} {language === 'bn' ? 'টি' : 'found'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer p-0.5"
+                    title={language === 'bn' ? 'সার্চ মুছুন' : 'Clear search'}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1090,8 +1159,8 @@ export const BatchInventoryView: React.FC = () => {
               onChange={(e) => setStockFilter(e.target.value as any)}
               className="w-full py-2 px-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
             >
+              <option value="ALL">{language === 'bn' ? 'সকল ব্যাচ (সব স্টক)' : 'All Batches (Inc. 0 Stock)'}</option>
               <option value="IN_STOCK">{language === 'bn' ? 'স্টক উপলব্ধ (Stock > 0)' : 'In Stock (> 0)'}</option>
-              <option value="ALL">{language === 'bn' ? 'সকল (জিরো স্টক সহ)' : 'All (Inc. 0 Stock)'}</option>
               <option value="OUT_OF_STOCK">{language === 'bn' ? 'স্টক শেষ (Stock = 0)' : 'Out of Stock (= 0)'}</option>
             </select>
           </div>
@@ -1150,21 +1219,25 @@ export const BatchInventoryView: React.FC = () => {
                 {language === 'bn' ? 'কোন ব্যাচ রেকর্ড পাওয়া যায়নি' : 'No batch inventory records found'}
               </h3>
               <p className="text-xs text-zinc-500 max-w-md mx-auto">
-                {language === 'bn'
-                  ? 'আপনার সিলেক্ট করা ফিল্টার বা সার্চ দিয়ে কোন ব্যাচের তথ্য পাওয়া যায়নি। অন্য ফিল্টার দিয়ে চেষ্টা করুন।'
-                  : 'Try adjusting your search criteria or reset filters to see available batch stock.'}
+                {searchQuery.trim()
+                  ? (language === 'bn'
+                      ? `"${searchQuery.trim()}" দিয়ে কোন ব্যাচ বা পণ্য পাওয়া যায়নি। ফিল্টার রিসেট করে আবার চেষ্টা করুন।`
+                      : `No batches or products matched "${searchQuery.trim()}". Try resetting filters.`)
+                  : (language === 'bn'
+                      ? 'আপনার সিলেক্ট করা ফিল্টার দিয়ে কোন ব্যাচের তথ্য পাওয়া যায়নি।'
+                      : 'Try adjusting your search criteria or reset filters to see available batch stock.')}
               </p>
               <button
                 type="button"
                 onClick={resetFilters}
-                className="px-4 py-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-xl cursor-pointer"
+                className="px-4 py-2 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-xl cursor-pointer transition-colors"
               >
-                {language === 'bn' ? 'ফিল্টার রিসেট করুন' : 'Reset All Filters'}
+                {language === 'bn' ? 'ফিল্টার ও সার্চ রিসেট করুন' : 'Reset All Filters & Search'}
               </button>
             </div>
           ) : (
             groupedByBatchNumber.map((group) => {
-              const isExpanded = expandedBatches[group.batchNumber] ?? true;
+              const isExpanded = searchQuery.trim() ? true : (expandedBatches[group.batchNumber] ?? true);
 
               return (
                 <div
@@ -1441,7 +1514,23 @@ export const BatchInventoryView: React.FC = () => {
                 {filteredItems.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-12 text-center text-zinc-500">
-                      {language === 'bn' ? 'কোন ব্যাচ পণ্য পাওয়া যায়নি' : 'No batch inventory items matched filters.'}
+                      <div className="space-y-2 max-w-sm mx-auto">
+                        <p className="font-semibold text-zinc-700 dark:text-zinc-300">
+                          {language === 'bn' ? 'কোন ব্যাচ পণ্য পাওয়া যায়নি' : 'No batch inventory items matched filters.'}
+                        </p>
+                        {searchQuery && (
+                          <p className="text-xs text-zinc-400">
+                            {language === 'bn' ? `"${searchQuery}" এর জন্য কোন ফলাফল পাওয়া যায়নি` : `No matches for "${searchQuery}"`}
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={resetFilters}
+                          className="mt-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg cursor-pointer transition-colors"
+                        >
+                          {language === 'bn' ? 'ফিল্টার ও সার্চ রিসেট করুন' : 'Reset Search & Filters'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ) : (
