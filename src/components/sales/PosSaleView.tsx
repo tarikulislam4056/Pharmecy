@@ -190,6 +190,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
 
   // Delivery / Net / Description / Attachment / SMS
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
+  const [overallDiscountPercent, setOverallDiscountPercent] = useState<number>(0);
   const [sendDueSms, setSendDueSms] = useState<boolean>(smsConfig.enabled && smsConfig.autoSendOnSale);
   const [description, setDescription] = useState<string>('');
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
@@ -401,6 +402,8 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
   }, [products, catalogSearch, catalogCategory]);
 
   // Calculation of Table Items Total
+  const isPharmacyMode = companySettings?.businessModule === 'pharmacy';
+
   const itemsSubtotal = useMemo(() => {
     return items.reduce((sum, item) => sum + (item.total || 0), 0);
   }, [items]);
@@ -414,7 +417,11 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
     }, 0);
   }, [items]);
 
-  const netAmount = Math.max(0, itemsSubtotal);
+  const overallDiscountAmount = isPharmacyMode 
+    ? (itemsSubtotal * (overallDiscountPercent || 0)) / 100 
+    : 0;
+
+  const netAmount = Math.max(0, itemsSubtotal - overallDiscountAmount);
   const totalAmount = Math.max(0, netAmount + (deliveryFee || 0));
 
   // EMI Calculations
@@ -2547,6 +2554,30 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
                 />
               </div>
             </div>
+
+            {/* Pharmacy Mode: Overall Bill Discount % */}
+            {isPharmacyMode && (
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 w-28 flex items-center gap-1">
+                  <span>{language === 'bn' ? 'সার্বিক ডিসকাউন্ট (%):' : 'Bill Discount (%):'}</span>
+                </label>
+                <div className="relative flex-1">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs">
+                    %
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="any"
+                    value={overallDiscountPercent || ''}
+                    onChange={e => setOverallDiscountPercent(parseFloat(e.target.value) || 0)}
+                    placeholder="0.0%"
+                    className="w-full pl-3 pr-7 py-2 bg-emerald-50/50 dark:bg-slate-800 border border-emerald-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-mono font-bold text-emerald-700 dark:text-emerald-300 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Net Amount */}
             <div className="flex items-center justify-between gap-3">
