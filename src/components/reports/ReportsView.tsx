@@ -74,6 +74,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
   } = useApp();
   const { t } = useTranslation(language);
 
+  const isPharmacyMode = companySettings?.businessModule === 'pharmacy';
+
   const availableGenerics = useMemo(() => {
     const list = [
       ...(companySettings?.productGenerics || []),
@@ -1661,21 +1663,23 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                 </select>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                  {language === 'bn' ? 'জেনেরিক' : 'Generic'}
-                </label>
-                <select
-                  value={summaryGeneric}
-                  onChange={e => setSummaryGeneric(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
-                >
-                  <option value="ALL">All Generics</option>
-                  {availableGenerics.map(g => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
-              </div>
+              {isPharmacyMode && (
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                    {language === 'bn' ? 'জেনেরিক' : 'Generic'}
+                  </label>
+                  <select
+                    value={summaryGeneric}
+                    onChange={e => setSummaryGeneric(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                  >
+                    <option value="ALL">All Generics</option>
+                    {availableGenerics.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-[11px] font-medium text-slate-500 mb-1">
@@ -1716,7 +1720,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
               <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 font-semibold border-b">
                 <tr>
                   <th className="py-2.5 px-4">Item Name & SKU</th>
-                  <th className="py-2.5 px-4">Generic</th>
+                  {isPharmacyMode && <th className="py-2.5 px-4">Generic</th>}
                   <th className="py-2.5 px-4">Brand / Manufacturer</th>
                   <th className="py-2.5 px-4">Category</th>
                   <th className="py-2.5 px-4 text-right">Available Stock</th>
@@ -1725,10 +1729,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                   <th className="py-2.5 px-4 text-right">Total Asset Value</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {filteredStockSummaryProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400">
+                    <td colSpan={isPharmacyMode ? 8 : 7} className="py-8 text-center text-slate-400">
                       No matching products found.
                     </td>
                   </tr>
@@ -1739,7 +1743,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                         {p.name}
                         {p.barcode && <span className="text-[10px] text-slate-400 ml-2 font-mono">({p.barcode})</span>}
                       </td>
-                      <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{p.generic || '—'}</td>
+                      {isPharmacyMode && (
+                        <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{p.generic || '—'}</td>
+                      )}
                       <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{p.manufacturer || '—'}</td>
                       <td className="py-2.5 px-4 text-slate-500">{p.categoryName}</td>
                       <td className="py-2.5 px-4 text-right font-mono font-bold">
@@ -1935,21 +1941,23 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
               </div>
 
               {/* 2.5 Generic Filter */}
-              <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                  {language === 'bn' ? 'জেনেরিক' : 'Generic'}
-                </label>
-                <select
-                  value={salesGeneric}
-                  onChange={e => setSalesGeneric(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
-                >
-                  <option value="ALL">All Generics</option>
-                  {availableGenerics.map(g => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
-              </div>
+              {isPharmacyMode && (
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                    {language === 'bn' ? 'জেনেরিক' : 'Generic'}
+                  </label>
+                  <select
+                    value={salesGeneric}
+                    onChange={e => setSalesGeneric(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                  >
+                    <option value="ALL">All Generics</option>
+                    {availableGenerics.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* 2.6 Brand Filter */}
               <div>
@@ -2164,7 +2172,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                   <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 font-semibold border-b">
                     <tr>
                       <th className="py-2.5 px-4">Item Name & SKU</th>
-                      <th className="py-2.5 px-4">Generic</th>
+                      {isPharmacyMode && <th className="py-2.5 px-4">Generic</th>}
                       <th className="py-2.5 px-4">Brand / Manufacturer</th>
                       <th className="py-2.5 px-4">Category</th>
                       <th className="py-2.5 px-4 text-right">In-Stock</th>
@@ -2177,7 +2185,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {itemWiseSalesData.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="py-8 text-center text-slate-400">
+                        <td colSpan={isPharmacyMode ? 9 : 8} className="py-8 text-center text-slate-400">
                           No matching products found for sales report.
                         </td>
                       </tr>
@@ -2190,7 +2198,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                               <span className="text-[10px] text-slate-400 ml-1.5 font-mono">[{s.product.barcode}]</span>
                             )}
                           </td>
-                          <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{s.product.generic || '—'}</td>
+                          {isPharmacyMode && (
+                            <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{s.product.generic || '—'}</td>
+                          )}
                           <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{s.product.manufacturer || '—'}</td>
                           <td className="py-2.5 px-4 text-slate-500">{s.product.categoryName}</td>
                           <td className="py-2.5 px-4 text-right font-mono text-slate-600 dark:text-slate-400">
@@ -2336,21 +2346,23 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
               </div>
 
               {/* 2.5 Generic Filter */}
-              <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                  {language === 'bn' ? 'জেনেরিক' : 'Generic'}
-                </label>
-                <select
-                  value={purchaseGeneric}
-                  onChange={e => setPurchaseGeneric(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
-                >
-                  <option value="ALL">All Generics</option>
-                  {availableGenerics.map(g => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
-              </div>
+              {isPharmacyMode && (
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                    {language === 'bn' ? 'জেনেরিক' : 'Generic'}
+                  </label>
+                  <select
+                    value={purchaseGeneric}
+                    onChange={e => setPurchaseGeneric(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                  >
+                    <option value="ALL">All Generics</option>
+                    {availableGenerics.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* 2.6 Brand Filter */}
               <div>
@@ -2565,7 +2577,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                   <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 font-semibold border-b">
                     <tr>
                       <th className="py-2.5 px-4">Item Name & SKU</th>
-                      <th className="py-2.5 px-4">Generic</th>
+                      {isPharmacyMode && <th className="py-2.5 px-4">Generic</th>}
                       <th className="py-2.5 px-4">Brand / Manufacturer</th>
                       <th className="py-2.5 px-4">Category</th>
                       <th className="py-2.5 px-4 text-right">In-Stock</th>
@@ -2578,7 +2590,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {itemWisePurchasesData.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="py-8 text-center text-slate-400">
+                        <td colSpan={isPharmacyMode ? 9 : 8} className="py-8 text-center text-slate-400">
                           No matching products found for purchase report.
                         </td>
                       </tr>
@@ -2591,7 +2603,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                               <span className="text-[10px] text-slate-400 ml-1.5 font-mono">[{p.product.barcode}]</span>
                             )}
                           </td>
-                          <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{p.product.generic || '—'}</td>
+                          {isPharmacyMode && (
+                            <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{p.product.generic || '—'}</td>
+                          )}
                           <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{p.product.manufacturer || '—'}</td>
                           <td className="py-2.5 px-4 text-slate-500">{p.product.categoryName}</td>
                           <td className="py-2.5 px-4 text-right font-mono text-slate-600 dark:text-slate-400">
@@ -2739,21 +2753,23 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
               </div>
 
               {/* 2.5 Generic Filter */}
-              <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                  {language === 'bn' ? 'জেনেরিক' : 'Generic'}
-                </label>
-                <select
-                  value={pnlGeneric}
-                  onChange={e => setPnlGeneric(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
-                >
-                  <option value="ALL">All Generics</option>
-                  {availableGenerics.map(g => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
-              </div>
+              {isPharmacyMode && (
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                    {language === 'bn' ? 'জেনেরিক' : 'Generic'}
+                  </label>
+                  <select
+                    value={pnlGeneric}
+                    onChange={e => setPnlGeneric(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                  >
+                    <option value="ALL">All Generics</option>
+                    {availableGenerics.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* 2.6 Brand Filter */}
               <div>
@@ -3001,7 +3017,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                   <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 font-semibold border-b">
                     <tr>
                       <th className="py-2.5 px-4">Item Name & SKU</th>
-                      <th className="py-2.5 px-4">Generic</th>
+                      {isPharmacyMode && <th className="py-2.5 px-4">Generic</th>}
                       <th className="py-2.5 px-4">Brand / Manufacturer</th>
                       <th className="py-2.5 px-4">Category</th>
                       <th className="py-2.5 px-4 text-right">Sold Qty</th>
@@ -3015,7 +3031,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {itemPnlData.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="py-8 text-center text-slate-400">
+                        <td colSpan={isPharmacyMode ? 10 : 9} className="py-8 text-center text-slate-400">
                           No matching products found for profit & loss report.
                         </td>
                       </tr>
@@ -3028,7 +3044,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
                               <span className="text-[10px] text-slate-400 ml-1.5 font-mono">[{s.product.barcode}]</span>
                             )}
                           </td>
-                          <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{s.product.generic || '—'}</td>
+                          {isPharmacyMode && (
+                            <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{s.product.generic || '—'}</td>
+                          )}
                           <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{s.product.manufacturer || '—'}</td>
                           <td className="py-2.5 px-4 text-slate-500">{s.product.categoryName}</td>
                           <td className="py-2.5 px-4 text-right font-mono font-bold text-blue-600">

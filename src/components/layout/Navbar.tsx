@@ -246,6 +246,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onOpenKeyboardS
                   {getActiveTabTitle()}
                 </span>
               )}
+              <span className={`hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border shrink-0 ${
+                companySettings.businessModule === 'pharmacy'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                  : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+              }`}>
+                {companySettings.businessModule === 'pharmacy' ? '💊 ফার্মেসী' : '🏪 দোকান'}
+              </span>
             </div>
             {companySettings.nameBn && (
               <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold truncate leading-none mt-0.5">

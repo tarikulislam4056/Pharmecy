@@ -227,6 +227,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-xs text-slate-400 font-medium block truncate" title={companySettings.nameBn || companySettings.slogan || (language === 'bn' ? 'দোকান ও ব্যবসা ম্যানেজমেন্ট' : 'Enterprise Management')}>
                   {companySettings.nameBn || companySettings.slogan || (language === 'bn' ? 'দোকান ও ব্যবসা ম্যানেজমেন্ট' : 'Enterprise Management')}
                 </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    companySettings.businessModule === 'pharmacy'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                      : 'bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800'
+                  }`}>
+                    {companySettings.businessModule === 'pharmacy' ? '💊 ফার্মেসী মডিউল' : '🏪 দোকান মডিউল'}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -597,8 +606,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {/* MEDICINE */}
-          {isTabAllowed(currentUser, 'medicine') && (
+          {/* MEDICINE (Only shown when Pharmacy module is active) */}
+          {companySettings.businessModule === 'pharmacy' && isTabAllowed(currentUser, 'medicine') && (
             <button
               type="button"
               onClick={() => handleSelectTab('medicine')}

@@ -9,7 +9,16 @@ export const CategoriesView: React.FC = () => {
   const { language, categories, addCategory, updateCategory, deleteCategory, products, showToast, companySettings, updateCompanySettings, currentUser } = useApp();
   const { t } = useTranslation(language);
 
+  const isPharmacyMode = companySettings?.businessModule === 'pharmacy';
+
   const [activeTab, setActiveTab] = useState<'categories' | 'generics' | 'manufacturers'>('categories');
+
+  // Auto-switch away from generics if module is not pharmacy
+  React.useEffect(() => {
+    if (!isPharmacyMode && activeTab === 'generics') {
+      setActiveTab('categories');
+    }
+  }, [isPharmacyMode, activeTab]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -139,31 +148,46 @@ export const CategoriesView: React.FC = () => {
         <div>
           <h2 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
             <FolderTree className="w-5 h-5 text-emerald-600" />
-            <span>Product Taxonomy (ক্যাটাগরি, জেনেরিক ও কোম্পানি)</span>
+            <span>
+              {isPharmacyMode
+                ? (language === 'bn' ? 'Product Taxonomy (ক্যাটাগরি, জেনেরিক ও কোম্পানি)' : 'Product Taxonomy (Categories, Generics & Brands)')
+                : (language === 'bn' ? 'Product Taxonomy (ক্যাটাগরি ও কোম্পানি/ব্র্যান্ড)' : 'Product Taxonomy (Categories & Brands)')}
+            </span>
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            {language === 'bn' ? 'পণ্যের বিভাগ, জেনেরিক নাম ও কোম্পানির তালিকা ম্যানেজমেন্ট' : 'Manage categories, generic names, and manufacturer brands'}
+            {isPharmacyMode
+              ? (language === 'bn' ? 'পণ্যের বিভাগ, ঔষধের জেনেরিক নাম ও কোম্পানির তালিকা ম্যানেজমেন্ট' : 'Manage categories, medicine generic names, and manufacturer brands')
+              : (language === 'bn' ? 'পণ্যের বিভাগ ও প্রস্তুতকারক কোম্পানির তালিকা ম্যানেজমেন্ট' : 'Manage product categories and manufacturer brands')}
           </p>
         </div>
 
         <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-sm font-semibold">
           <button
             onClick={() => setActiveTab('categories')}
-            className={`px-3 py-1.5 rounded-md cursor-pointer ${activeTab === 'categories' ? 'bg-white dark:bg-zinc-700 shadow-xs' : 'text-zinc-500'}`}
+            className={`px-3 py-1.5 rounded-md cursor-pointer transition-colors ${
+              activeTab === 'categories' ? 'bg-white dark:bg-zinc-700 shadow-xs text-zinc-900 dark:text-white font-bold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+            }`}
           >
-            Categories
+            {language === 'bn' ? 'ক্যাটাগরি (Categories)' : 'Categories'}
           </button>
-          <button
-            onClick={() => setActiveTab('generics')}
-            className={`px-3 py-1.5 rounded-md cursor-pointer ${activeTab === 'generics' ? 'bg-white dark:bg-zinc-700 shadow-xs' : 'text-zinc-500'}`}
-          >
-            Generics
-          </button>
+          {isPharmacyMode && (
+            <button
+              onClick={() => setActiveTab('generics')}
+              className={`px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-1.5 transition-colors ${
+                activeTab === 'generics' ? 'bg-white dark:bg-zinc-700 shadow-xs text-emerald-600 dark:text-emerald-400 font-bold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+              }`}
+            >
+              <Pill className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'জেনেরিক (Generics)' : 'Generics'}</span>
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('manufacturers')}
-            className={`px-3 py-1.5 rounded-md cursor-pointer ${activeTab === 'manufacturers' ? 'bg-white dark:bg-zinc-700 shadow-xs' : 'text-zinc-500'}`}
+            className={`px-3 py-1.5 rounded-md cursor-pointer transition-colors ${
+              activeTab === 'manufacturers' ? 'bg-white dark:bg-zinc-700 shadow-xs text-zinc-900 dark:text-white font-bold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+            }`}
           >
-            Brands
+            {language === 'bn' ? 'ব্র্যান্ড / কোম্পানি' : 'Brands'}
           </button>
         </div>
       </div>
@@ -233,12 +257,12 @@ export const CategoriesView: React.FC = () => {
         </>
       )}
 
-      {activeTab === 'generics' && (
+      {isPharmacyMode && activeTab === 'generics' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-xs">
             <h3 className="font-bold text-sm mb-4 flex items-center gap-2 text-zinc-900 dark:text-white">
               <Pill className="w-4 h-4 text-emerald-600" />
-              <span>Add Generic Name</span>
+              <span>{language === 'bn' ? 'নতুন জেনেরিক নাম যোগ করুন' : 'Add Generic Name'}</span>
             </h3>
             <form onSubmit={handleAddGeneric} className="space-y-3">
               <input
@@ -246,31 +270,45 @@ export const CategoriesView: React.FC = () => {
                 required
                 value={newGeneric}
                 onChange={e => setNewGeneric(e.target.value)}
-                placeholder="e.g. Paracetamol 500mg"
-                className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border rounded-lg text-sm"
+                placeholder="e.g. Paracetamol, Cefixime"
+                className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm text-zinc-900 dark:text-white"
               />
               <button
                 type="submit"
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm"
+                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm cursor-pointer shadow-xs"
               >
-                Save Generic
+                {language === 'bn' ? 'জেনেরিক সংরক্ষণ করুন' : 'Save Generic'}
               </button>
             </form>
           </div>
           <div className="md:col-span-2 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-xs">
-            <h3 className="font-bold text-sm mb-4 text-zinc-900 dark:text-white">Generics List ({generics.length})</h3>
+            <h3 className="font-bold text-sm mb-4 text-zinc-900 dark:text-white flex items-center justify-between">
+              <span>{language === 'bn' ? 'জেনেরিক তালিকা' : 'Generics List'}</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono font-bold">
+                {generics.length} {language === 'bn' ? 'টি জেনেরিক' : 'items'}
+              </span>
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {generics.map(item => (
                 <div key={item} className="flex items-center justify-between p-2.5 bg-zinc-50 dark:bg-zinc-800 rounded-lg border border-zinc-100 dark:border-zinc-700">
-                  <span className="text-sm font-medium">{item}</span>
+                  <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{item}</span>
                   {hasDeletePermission && (
-                    <button onClick={() => handleDeleteGeneric(item)} className="p-1 text-rose-500 hover:bg-rose-50 rounded">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteGeneric(item)}
+                      className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded cursor-pointer"
+                      title={language === 'bn' ? 'মুছে ফেলুন' : 'Delete'}
+                    >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
                 </div>
               ))}
-              {generics.length === 0 && <p className="text-sm text-zinc-500">No generics added yet.</p>}
+              {generics.length === 0 && (
+                <p className="text-sm text-zinc-500 col-span-2 py-4 text-center">
+                  {language === 'bn' ? 'এখনো কোনো জেনেরিক যুক্ত করা হয়নি।' : 'No generics added yet.'}
+                </p>
+              )}
             </div>
           </div>
         </div>

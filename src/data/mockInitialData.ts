@@ -36,6 +36,7 @@ export const initialCompanySettings: CompanySettings = {
   taxNumber: 'BIN-002948192-0102',
   currencySymbol: '৳',
   currencyCode: 'BDT',
+  businessModule: 'dokan',
   logoUrl: 'https://i.postimg.cc/Twh0KBbL/logo-(1).jpg',
   signatureUrl: '',
   invoiceFooter: 'Thank you for shopping with us! Warranty claims require original invoice within 7 days. • আমাদের সাথে থাকার জন্য ধন্যবাদ।',

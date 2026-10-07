@@ -915,6 +915,8 @@ export interface InvoiceTemplateDef {
 
 export type DashboardColorTheme = 'INDIGO' | 'EMERALD' | 'BLUE' | 'ROSE' | 'AMBER' | 'TEAL' | 'VIOLET' | 'SLATE' | 'CUSTOM';
 
+export type BusinessModuleType = 'pharmacy' | 'dokan';
+
 export interface CompanySettings {
   name: string;
   nameBn: string;
@@ -926,6 +928,7 @@ export interface CompanySettings {
   taxNumber: string;
   currencySymbol: string;
   currencyCode: string;
+  businessModule?: BusinessModuleType;
   logoUrl?: string;
   signatureUrl?: string;
   invoiceFooter: string;

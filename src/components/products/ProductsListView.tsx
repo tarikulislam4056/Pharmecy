@@ -63,6 +63,8 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
   } = useApp();
   const { t } = useTranslation(language);
 
+  const isPharmacyMode = companySettings?.businessModule === 'pharmacy';
+
   // Active View Tab
   const [activeTab, setActiveTab] = useState<'all' | 'batch-inventory' | 'expiry' | 'low-stock' | 'return-logs' | 'write-off-logs' | 'replace-logs'>('all');
   const [expirySubFilter, setExpirySubFilter] = useState<'expired' | 'expiring-soon' | 'fresh' | 'all-dated'>('expired');
@@ -983,24 +985,26 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
             </select>
           </div>
 
-          {/* Generic Filter */}
-          <div>
-            <label className="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-              {language === 'bn' ? 'জেনেরিক' : 'Generic'}
-            </label>
-            <select
-              value={selectedGeneric}
-              onChange={e => setSelectedGeneric(e.target.value)}
-              className="w-full py-1.5 px-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-medium text-zinc-800 dark:text-zinc-200"
-            >
-              <option value="ALL">{language === 'bn' ? 'সকল জেনেরিক (All)' : 'All Generics'}</option>
-              {uniqueGenerics.map(g => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Generic Filter (Pharmacy Mode only) */}
+          {isPharmacyMode && (
+            <div>
+              <label className="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                {language === 'bn' ? 'জেনেরিক' : 'Generic'}
+              </label>
+              <select
+                value={selectedGeneric}
+                onChange={e => setSelectedGeneric(e.target.value)}
+                className="w-full py-1.5 px-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-medium text-zinc-800 dark:text-zinc-200"
+              >
+                <option value="ALL">{language === 'bn' ? 'সকল জেনেরিক (All)' : 'All Generics'}</option>
+                {uniqueGenerics.map(g => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Brand / Manufacturer Filter */}
           <div>
@@ -1190,10 +1194,10 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                 <tr>
                   <th className="py-3 px-4">{language === 'bn' ? 'পণ্যের নাম' : 'Product Name'}</th>
                   <th className="py-3 px-4 font-mono">{language === 'bn' ? 'যোগের তারিখ' : 'Added Date'}</th>
-                  <th className="py-3 px-4">{language === 'bn' ? 'জেনেরিক' : 'Generic'}</th>
-                  <th className="py-3 px-4">{language === 'bn' ? 'ব্র্যান্ড / কোম্পানি' : 'Brand / Company'}</th>
-                  <th className="py-3 px-4">{language === 'bn' ? 'স্ট্রেংথ (Strength)' : 'Strength'}</th>
-                  <th className="py-3 px-4">{language === 'bn' ? 'ডোজ ও সেবনবিধি' : 'Dosage & Rules'}</th>
+                  {isPharmacyMode && <th className="py-3 px-4">{language === 'bn' ? 'জেনেরিক' : 'Generic'}</th>}
+                  <th className="py-3 px-4">{language === 'bn' ? (isPharmacyMode ? 'ব্র্যান্ড / কোম্পানি' : 'ব্র্যান্ড / কোম্পানি') : 'Brand / Company'}</th>
+                  {isPharmacyMode && <th className="py-3 px-4">{language === 'bn' ? 'স্ট্রেংথ (Strength)' : 'Strength'}</th>}
+                  {isPharmacyMode && <th className="py-3 px-4">{language === 'bn' ? 'ডোজ ও সেবনবিধি' : 'Dosage & Rules'}</th>}
                   <th className="py-3 px-4">{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</th>
                   <th className="py-3 px-4 font-mono">{language === 'bn' ? 'র‍্যাক/শেলফ' : 'Rack Location'}</th>
                   <th className="py-3 px-4 font-mono">{language === 'bn' ? 'বারকোড' : 'Barcode'}</th>
@@ -1210,7 +1214,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={17} className="py-12 text-center text-zinc-400">
+                    <td colSpan={isPharmacyMode ? 17 : 14} className="py-12 text-center text-zinc-400">
                       {language === 'bn' ? 'নির্বাচিত ফিল্টারে কোনো পণ্য পাওয়া যায়নি।' : 'No products found for the selected filters.'}
                     </td>
                   </tr>
@@ -1269,46 +1273,52 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                           )}
                         </td>
 
-                        {/* Generic */}
-                        <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
-                          {p.generic || '—'}
-                        </td>
+                        {/* Generic (Pharmacy only) */}
+                        {isPharmacyMode && (
+                          <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
+                            {p.generic || '—'}
+                          </td>
+                        )}
 
                         {/* Brand / Manufacturer */}
                         <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
                           {p.manufacturer || '—'}
                         </td>
 
-                        {/* Strength */}
-                        <td className="py-3 px-4 font-mono font-bold text-blue-700 dark:text-blue-300 whitespace-nowrap">
-                          {p.strength ? (
-                            <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 rounded">
-                              {p.strength}
-                            </span>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
+                        {/* Strength (Pharmacy only) */}
+                        {isPharmacyMode && (
+                          <td className="py-3 px-4 font-mono font-bold text-blue-700 dark:text-blue-300 whitespace-nowrap">
+                            {p.strength ? (
+                              <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 rounded">
+                                {p.strength}
+                              </span>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        )}
 
-                        {/* Dosage Form & Schedule */}
-                        <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium whitespace-nowrap">
-                          {p.dosageForm || p.dosageSchedule ? (
-                            <div className="space-y-0.5">
-                              {p.dosageForm && (
-                                <span className="inline-block px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded">
-                                  {p.dosageForm}
-                                </span>
-                              )}
-                              {p.dosageSchedule && (
-                                <div className="text-[11px] text-purple-700 dark:text-purple-300 font-semibold">
-                                  {p.dosageSchedule}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
+                        {/* Dosage Form & Schedule (Pharmacy only) */}
+                        {isPharmacyMode && (
+                          <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium whitespace-nowrap">
+                            {p.dosageForm || p.dosageSchedule ? (
+                              <div className="space-y-0.5">
+                                {p.dosageForm && (
+                                  <span className="inline-block px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded">
+                                    {p.dosageForm}
+                                  </span>
+                                )}
+                                {p.dosageSchedule && (
+                                  <div className="text-[11px] text-purple-700 dark:text-purple-300 font-semibold">
+                                    {p.dosageSchedule}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        )}
 
                         {/* Category */}
                         <td className="py-3 px-4 text-zinc-600 dark:text-zinc-300">

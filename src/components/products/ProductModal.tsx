@@ -20,6 +20,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const { language, categories, products, addProduct, updateProduct, showToast, companySettings } = useApp();
   const { t } = useTranslation(language);
 
+  const isPharmacyMode = companySettings?.businessModule === 'pharmacy';
+
   const [name, setName] = useState('');
   const [nameBn, setNameBn] = useState('');
   const [sku, setSku] = useState('');
@@ -231,11 +233,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       discountType,
       expDate: expDate.trim() || undefined,
       batchNumber: batchNumber.trim() || undefined,
-      generic: generic.trim() || undefined,
+      generic: isPharmacyMode ? (generic.trim() || undefined) : undefined,
       manufacturer: manufacturer.trim() || undefined,
-      strength: strength.trim() || undefined,
-      dosageForm: dosageForm.trim() || undefined,
-      dosageSchedule: dosageSchedule.trim() || undefined,
+      strength: isPharmacyMode ? (strength.trim() || undefined) : undefined,
+      dosageForm: isPharmacyMode ? (dosageForm.trim() || undefined) : undefined,
+      dosageSchedule: isPharmacyMode ? (dosageSchedule.trim() || undefined) : undefined,
       rackLocation: rackLocation.trim() || undefined,
       stock: parseInt(stock) || 0,
       unit,
@@ -271,6 +273,15 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
               {productToEdit ? (language === 'bn' ? 'পণ্য সম্পাদনা' : 'Edit Product') : (language === 'bn' ? 'নতুন পণ্য যোগ করুন' : 'Add New Product')}
             </h3>
+            {companySettings?.businessModule === 'pharmacy' ? (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                💊 ফার্মেসী মোড
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
+                🏪 দোকান মোড
+              </span>
+            )}
           </div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg cursor-pointer">
             <X className="w-5 h-5" />
@@ -381,145 +392,188 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Generic Name (জেনেরিক নাম)
-              </label>
-              <input
-                type="text"
-                list="generics-list"
-                value={generic}
-                onChange={e => setGeneric(e.target.value)}
-                placeholder="e.g. Paracetamol"
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 dark:text-white"
-              />
-              <datalist id="generics-list">
-                {companySettings.productGenerics?.map(g => (
-                  <option key={g} value={g} />
-                ))}
-              </datalist>
+          {/* Manufacturer & Rack Location (or with Generic Name in Pharmacy Mode) */}
+          {isPharmacyMode ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Generic Name (জেনেরিক নাম)
+                </label>
+                <input
+                  type="text"
+                  list="generics-list"
+                  value={generic}
+                  onChange={e => setGeneric(e.target.value)}
+                  placeholder="e.g. Paracetamol"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 dark:text-white"
+                />
+                <datalist id="generics-list">
+                  {companySettings.productGenerics?.map(g => (
+                    <option key={g} value={g} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Manufacturer / Brand (কোম্পানি)
+                </label>
+                <input
+                  type="text"
+                  list="manufacturers-list"
+                  value={manufacturer}
+                  onChange={e => setManufacturer(e.target.value)}
+                  placeholder="e.g. Square, Beximco"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 dark:text-white"
+                />
+                <datalist id="manufacturers-list">
+                  {companySettings.productManufacturers?.map(m => (
+                    <option key={m} value={m} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Rack Location (র‍্যাক / শেলফ লোকেশন)
+                </label>
+                <input
+                  type="text"
+                  value={rackLocation}
+                  onChange={e => setRackLocation(e.target.value)}
+                  placeholder="e.g. Rack A-01, Shelf 3"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 font-mono text-slate-900 dark:text-white"
+                />
+              </div>
             </div>
-            <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Manufacturer / Brand (কোম্পানি)
-              </label>
-              <input
-                type="text"
-                list="manufacturers-list"
-                value={manufacturer}
-                onChange={e => setManufacturer(e.target.value)}
-                placeholder="e.g. Square, Beximco"
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 dark:text-white"
-              />
-              <datalist id="manufacturers-list">
-                {companySettings.productManufacturers?.map(m => (
-                  <option key={m} value={m} />
-                ))}
-              </datalist>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Manufacturer / Brand (কোম্পানি / ব্র্যান্ড)
+                </label>
+                <input
+                  type="text"
+                  list="manufacturers-list"
+                  value={manufacturer}
+                  onChange={e => setManufacturer(e.target.value)}
+                  placeholder="e.g. Unilever, Pran, Walton"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 dark:text-white"
+                />
+                <datalist id="manufacturers-list">
+                  {companySettings.productManufacturers?.map(m => (
+                    <option key={m} value={m} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Rack Location (র‍্যাক / শেলফ লোকেশন)
+                </label>
+                <input
+                  type="text"
+                  value={rackLocation}
+                  onChange={e => setRackLocation(e.target.value)}
+                  placeholder="e.g. Rack A-01, Shelf 3"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 font-mono text-slate-900 dark:text-white"
+                />
+              </div>
             </div>
-            <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Rack Location (র‍্যাক / শেলফ লোকেশন)
-              </label>
-              <input
-                type="text"
-                value={rackLocation}
-                onChange={e => setRackLocation(e.target.value)}
-                placeholder="e.g. Rack A-01, Shelf 3"
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 font-mono text-slate-900 dark:text-white"
-              />
-            </div>
-          </div>
+          )}
 
-          {/* Strength, Dosage Form & Dosage Schedule / Rules */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Strength / Power (স্ট্রেংথ / মাত্রা)
-              </label>
-              <input
-                type="text"
-                list="strengths-list"
-                value={strength}
-                onChange={e => setStrength(e.target.value)}
-                placeholder="e.g. 500mg, 10mg, 100ml"
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 font-mono text-slate-900 dark:text-white"
-              />
-              <datalist id="strengths-list">
-                <option value="500mg" />
-                <option value="250mg" />
-                <option value="100mg" />
-                <option value="50mg" />
-                <option value="20mg" />
-                <option value="10mg" />
-                <option value="5mg" />
-                <option value="2.5mg" />
-                <option value="100ml" />
-                <option value="60ml" />
-                <option value="15ml" />
-                <option value="250mg/5ml" />
-                <option value="500 IU" />
-                <option value="1%" />
-              </datalist>
-            </div>
+          {/* Pharmacy Exclusive: Strength, Dosage Form & Dosage Schedule / Rules */}
+          {isPharmacyMode && (
+            <div className="bg-emerald-50/50 dark:bg-emerald-950/20 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/60 space-y-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                <span>💊 ঔষধের মাত্রা ও সেবনবিধি (Medicine Dosage & Strength)</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Strength / Power (স্ট্রেংথ / মাত্রা)
+                  </label>
+                  <input
+                    type="text"
+                    list="strengths-list"
+                    value={strength}
+                    onChange={e => setStrength(e.target.value)}
+                    placeholder="e.g. 500mg, 10mg, 100ml"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-emerald-500 font-mono text-slate-900 dark:text-white"
+                  />
+                  <datalist id="strengths-list">
+                    <option value="500mg" />
+                    <option value="250mg" />
+                    <option value="100mg" />
+                    <option value="50mg" />
+                    <option value="20mg" />
+                    <option value="10mg" />
+                    <option value="5mg" />
+                    <option value="2.5mg" />
+                    <option value="100ml" />
+                    <option value="60ml" />
+                    <option value="15ml" />
+                    <option value="250mg/5ml" />
+                    <option value="500 IU" />
+                    <option value="1%" />
+                  </datalist>
+                </div>
 
-            <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Dosage Form (ডোজ ফরম / ধরন)
-              </label>
-              <input
-                type="text"
-                list="dosage-forms-list"
-                value={dosageForm}
-                onChange={e => setDosageForm(e.target.value)}
-                placeholder="e.g. Tablet, Capsule, Syrup"
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 dark:text-white"
-              />
-              <datalist id="dosage-forms-list">
-                <option value="Tablet" />
-                <option value="Capsule" />
-                <option value="Syrup" />
-                <option value="Suspension" />
-                <option value="Injection" />
-                <option value="Eye Drop" />
-                <option value="Ear Drop" />
-                <option value="Nasal Drop" />
-                <option value="Ointment" />
-                <option value="Gel" />
-                <option value="Cream" />
-                <option value="Inhaler" />
-                <option value="Suppository" />
-                <option value="Powder / Sachet" />
-                <option value="Lozenge" />
-                <option value="Mouthwash / Gargle" />
-              </datalist>
-            </div>
+                <div>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Dosage Form (ডোজ ফরম / ধরন)
+                  </label>
+                  <input
+                    type="text"
+                    list="dosage-forms-list"
+                    value={dosageForm}
+                    onChange={e => setDosageForm(e.target.value)}
+                    placeholder="e.g. Tablet, Capsule, Syrup"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white"
+                  />
+                  <datalist id="dosage-forms-list">
+                    <option value="Tablet" />
+                    <option value="Capsule" />
+                    <option value="Syrup" />
+                    <option value="Suspension" />
+                    <option value="Injection" />
+                    <option value="Eye Drop" />
+                    <option value="Ear Drop" />
+                    <option value="Nasal Drop" />
+                    <option value="Ointment" />
+                    <option value="Gel" />
+                    <option value="Cream" />
+                    <option value="Inhaler" />
+                    <option value="Suppository" />
+                    <option value="Powder / Sachet" />
+                    <option value="Lozenge" />
+                    <option value="Mouthwash / Gargle" />
+                  </datalist>
+                </div>
 
-            <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Dosage Rules (সেবনবিধি / ডোজ)
-              </label>
-              <input
-                type="text"
-                list="dosage-schedules-list"
-                value={dosageSchedule}
-                onChange={e => setDosageSchedule(e.target.value)}
-                placeholder="e.g. ১ + ০ + ১ (সকালে ও রাতে)"
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 dark:text-white"
-              />
-              <datalist id="dosage-schedules-list">
-                <option value="১ + ০ + ১ (সকালে ও রাতে)" />
-                <option value="১ + ১ + ১ (দিনে ৩ বার)" />
-                <option value="০ + ০ + ১ (রাতে)" />
-                <option value="১ + ০ + ০ (সকালে)" />
-                <option value="১টি করে দিনে ২ বার" />
-                <option value="প্রয়োজনে ১টি করে" />
-                <option value="ভরা পেটে" />
-                <option value="খালি পেটে" />
-              </datalist>
+                <div>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Dosage Rules (সেবনবিধি / ডোজ)
+                  </label>
+                  <input
+                    type="text"
+                    list="dosage-schedules-list"
+                    value={dosageSchedule}
+                    onChange={e => setDosageSchedule(e.target.value)}
+                    placeholder="e.g. ১ + ০ + ১ (সকালে ও রাতে)"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white"
+                  />
+                  <datalist id="dosage-schedules-list">
+                    <option value="১ + ০ + ১ (সকালে ও রাতে)" />
+                    <option value="১ + ১ + ১ (দিনে ৩ বার)" />
+                    <option value="০ + ০ + ১ (রাতে)" />
+                    <option value="১ + ০ + ০ (সকালে)" />
+                    <option value="১টি করে দিনে ২ বার" />
+                    <option value="প্রয়োজনে ১টি করে" />
+                    <option value="ভরা পেটে" />
+                    <option value="খালি পেটে" />
+                  </datalist>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Pricing & Stock */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-lg border border-slate-200 dark:border-slate-700">

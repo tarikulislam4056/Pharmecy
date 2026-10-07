@@ -553,6 +553,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         address: persisted?.address && !persisted.address.includes('Motijheel') ? persisted.address : initialCompanySettings.address,
         email: persisted?.email && !persisted.email.includes('info@dokanprobd.com') ? persisted.email : initialCompanySettings.email,
         logoUrl: persisted?.logoUrl || initialCompanySettings.logoUrl,
+        businessModule: persisted?.businessModule || initialCompanySettings.businessModule || 'dokan',
         invoiceTemplate: (persisted?.invoiceTemplate as any) || initialCompanySettings.invoiceTemplate || 'COMPACT_BILL',
       };
     }

@@ -55,6 +55,8 @@ import {
   RefreshCw,
   Cpu,
   Layers,
+  Pill,
+  Store,
 } from 'lucide-react';
 
 const SMS_PROVIDERS: { id: SmsProvider; name: string; nameBn: string; description: string; defaultUrl?: string; guideBn: string }[] = [
@@ -273,6 +275,7 @@ export const SettingsView: React.FC = () => {
     } catch {}
     return {
       ...companySettings,
+      businessModule: companySettings.businessModule || 'dokan',
       invoicePrintType: companySettings.invoicePrintType || 'A4',
       invoiceTemplate: companySettings.invoiceTemplate || 'MODERN_MINIMAL',
       invoiceColorTheme: companySettings.invoiceColorTheme || 'INDIGO_VIOLET',
@@ -289,6 +292,7 @@ export const SettingsView: React.FC = () => {
     if (isFormDirtyRef.current) return;
     setFormData({
       ...companySettings,
+      businessModule: companySettings.businessModule || 'dokan',
       invoicePrintType: companySettings.invoicePrintType || 'A4',
       invoiceTemplate: companySettings.invoiceTemplate || 'MODERN_MINIMAL',
       invoiceColorTheme: companySettings.invoiceColorTheme || 'INDIGO_VIOLET',
@@ -844,6 +848,143 @@ export const SettingsView: React.FC = () => {
       {/* ========================================================================= */}
       {activeTab === 'profile' && (
         <form onSubmit={handleProfileSubmit} className="space-y-5">
+          {/* Module Selection Card: মডিউল */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <span>{language === 'bn' ? 'মডিউল (Module)' : 'Module (Business Mode)'}</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {language === 'bn'
+                    ? 'আপনার ব্যবসার ধরন ও প্রয়োজনীয় ফিচার অনুযায়ী উপযুক্ত মডিউল নির্বাচন করুন'
+                    : 'Select your business module (Pharmacy or General Retail Store)'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {language === 'bn' ? 'সক্রিয় মডিউল:' : 'Active Mode:'}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 shadow-2xs ${
+                  formData.businessModule === 'pharmacy'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                    : 'bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                }`}>
+                  {formData.businessModule === 'pharmacy' ? (
+                    <>
+                      <Pill className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>{language === 'bn' ? 'ফার্মেসী সক্রিয়' : 'Pharmacy Active'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Store className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      <span>{language === 'bn' ? 'দোকান সক্রিয়' : 'Dokan Active'}</span>
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Two Module Selection Buttons: ফার্মেসী and দোকান */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              {/* Button 1: ফার্মেসী */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleProfileChange('businessModule', 'pharmacy');
+                  updateCompanySettings({ businessModule: 'pharmacy' });
+                  showToast(
+                    language === 'bn'
+                      ? 'ফার্মেসী মডিউল সক্রিয় করা হয়েছে (ঔষধ, ব্যাচ ও এক্সপায়ারি ট্র্যাকিং)।'
+                      : 'Pharmacy module activated (Medicine, Batch & Expiry tracking).',
+                    'success'
+                  );
+                }}
+                className={`relative p-4 rounded-xl border-2 text-left transition-all cursor-pointer flex items-start gap-3.5 ${
+                  formData.businessModule === 'pharmacy'
+                    ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-100 shadow-sm ring-2 ring-emerald-500/20'
+                    : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50/20'
+                }`}
+              >
+                <div className={`p-3 rounded-xl shrink-0 transition-colors ${
+                  formData.businessModule === 'pharmacy'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                }`}>
+                  <Pill className="w-6 h-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span>ফার্মেসী</span>
+                      <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">(Pharmacy)</span>
+                    </span>
+                    {formData.businessModule === 'pharmacy' && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800 shadow-2xs">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>{language === 'bn' ? 'সক্রিয়' : 'Active'}</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                    {language === 'bn'
+                      ? 'ঔষধ, জেনেরিক নাম, ব্যাচ নম্বর, মেয়াদোত্তীর্ণ (Expiry) ও ডোজ শিডিউল ট্র্যাকিং সহ সম্পূর্ণ ফার্মেসী ব্যবস্থাপনা।'
+                      : 'Medicine inventory, generic names, batch numbers, FEFO expiry tracking, and prescription management.'}
+                  </p>
+                </div>
+              </button>
+
+              {/* Button 2: দোকান */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleProfileChange('businessModule', 'dokan');
+                  updateCompanySettings({ businessModule: 'dokan' });
+                  showToast(
+                    language === 'bn'
+                      ? 'দোকান মডিউল সক্রিয় করা হয়েছে (সাধারণ রিটেল, মুদি ও ডিপার্টমেন্টাল ইনভেন্টরি)।'
+                      : 'Dokan module activated (General Retail & Inventory).',
+                    'success'
+                  );
+                }}
+                className={`relative p-4 rounded-xl border-2 text-left transition-all cursor-pointer flex items-start gap-3.5 ${
+                  formData.businessModule === 'dokan' || !formData.businessModule
+                    ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/30 text-blue-950 dark:text-blue-100 shadow-sm ring-2 ring-blue-500/20'
+                    : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50/20'
+                }`}
+              >
+                <div className={`p-3 rounded-xl shrink-0 transition-colors ${
+                  formData.businessModule === 'dokan' || !formData.businessModule
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                }`}>
+                  <Store className="w-6 h-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span>দোকান</span>
+                      <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">(Dokan / General Store)</span>
+                    </span>
+                    {(formData.businessModule === 'dokan' || !formData.businessModule) && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/60 px-2 py-0.5 rounded-full border border-blue-300 dark:border-blue-800 shadow-2xs">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>{language === 'bn' ? 'সক্রিয়' : 'Active'}</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                    {language === 'bn'
+                      ? 'মুদি, ডিপার্টমেন্টাল, ইলেকট্রনিক্স, গার্মেন্টস বা যেকোনো সাধারণ খুচরা দোকান ও পাইকারি ব্যবসা ব্যবস্থাপনা।'
+                      : 'General retail, grocery, stationery, electronics, wholesale, and standard product inventory.'}
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+
           {/* General Information */}
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-2">
@@ -852,6 +993,52 @@ export const SettingsView: React.FC = () => {
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {/* মডিউল Column Field */}
+              <div className="md:col-span-2 bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-blue-600" />
+                    <span>{language === 'bn' ? 'মডিউল (ব্যবসার ধরন ও কার্যপ্রণালী)' : 'Module (Business Operation Mode)'} *</span>
+                  </label>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                    {formData.businessModule === 'pharmacy' ? 'ফার্মেসী নির্বাচিত' : 'দোকান নির্বাচিত'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleProfileChange('businessModule', 'pharmacy');
+                      updateCompanySettings({ businessModule: 'pharmacy' });
+                    }}
+                    className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      formData.businessModule === 'pharmacy'
+                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
+                        : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-emerald-500'
+                    }`}
+                  >
+                    <Pill className="w-4 h-4" />
+                    <span>{language === 'bn' ? 'ফার্মেসী' : 'Pharmacy'}</span>
+                    {formData.businessModule === 'pharmacy' && <Check className="w-3.5 h-3.5 ml-0.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleProfileChange('businessModule', 'dokan');
+                      updateCompanySettings({ businessModule: 'dokan' });
+                    }}
+                    className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      formData.businessModule === 'dokan' || !formData.businessModule
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
+                        : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-blue-500'
+                    }`}
+                  >
+                    <Store className="w-4 h-4" />
+                    <span>{language === 'bn' ? 'দোকান' : 'Dokan'}</span>
+                    {(formData.businessModule === 'dokan' || !formData.businessModule) && <Check className="w-3.5 h-3.5 ml-0.5" />}
+                  </button>
+                </div>
+              </div>
               <div>
                 <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                   Company / Store Name (English) *

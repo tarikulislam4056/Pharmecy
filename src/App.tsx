@@ -354,7 +354,18 @@ const MainLayout: React.FC = () => {
         );
 
       case 'medicine':
-        return isTabAllowed(currentUser, 'medicine') ? <MedicineView /> : <div className="text-center p-10">Access Denied</div>;
+        return companySettings.businessModule === 'pharmacy' && isTabAllowed(currentUser, 'medicine') ? (
+          <MedicineView />
+        ) : (
+          <div className="text-center p-10 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 m-4 space-y-2">
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+              মেডিসিন মডিউল শুধুমাত্র ফার্মেসী মোডে সক্রিয়
+            </h3>
+            <p className="text-xs text-slate-500">
+              Settings &gt; Profile থেকে &apos;ফার্মেসী&apos; মডিউল নির্বাচন করলে মেডিসিন মেনু ও ফিচারসমূহ দেখতে পাবেন।
+            </p>
+          </div>
+        );
 
       case 'batch-inventory':
         return <BatchInventoryView />;
