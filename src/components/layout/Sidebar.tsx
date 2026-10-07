@@ -487,7 +487,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* 4. INSTALLMENT SALES & EMI MANAGEMENT */}
-          {hasPermission(currentUser, 'INSTALLMENTS') && (
+          {hasPermission(currentUser, 'INSTALLMENTS') && companySettings.businessModule !== 'pharmacy' && (
             <button
               type="button"
               onClick={() => handleSelectTab('installments')}
@@ -589,18 +589,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   >
                     <span>{language === 'bn' ? 'ক্যাটেগরি তালিকা (Category List)' : 'Category List'}</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSelectTab('warranties')}
-                    className={`w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-left transition-colors cursor-pointer ${
-                      activeTab === 'warranties' ? `${sidebarTheme.activeBg} font-bold` : `text-slate-700 dark:text-slate-300 transition-colors ${sidebarTheme.sidebarHover}`
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-bold">
-                      {language === 'bn' ? 'ওয়ারেন্টি ম্যানেজমেন্ট (Warranty Mgmt)' : 'Warranty Management'}
-                    </span>
-                    <ShieldAlert className="w-4 h-4 text-indigo-500 shrink-0" />
-                  </button>
+                  {companySettings.businessModule !== 'pharmacy' && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTab('warranties')}
+                      className={`w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-left transition-colors cursor-pointer ${
+                        activeTab === 'warranties' ? `${sidebarTheme.activeBg} font-bold` : `text-slate-700 dark:text-slate-300 transition-colors ${sidebarTheme.sidebarHover}`
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-bold">
+                        {language === 'bn' ? 'ওয়ারেন্টি ম্যানেজমেন্ট (Warranty Mgmt)' : 'Warranty Management'}
+                      </span>
+                      <ShieldAlert className="w-4 h-4 text-indigo-500 shrink-0" />
+                    </button>
+                  )}
                 </div>
               )}
             </div>
