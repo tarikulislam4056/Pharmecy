@@ -89,6 +89,7 @@ import {
 } from '../data/mockInitialData';
 import { getFirstAllowedTab, isTabAllowed } from '../utils/permissions';
 import { isExpiredDate } from '../utils/dateUtils';
+import { getCachedClientDeviceInfo, fetchClientDeviceInfo } from '../utils/clientDevice';
 
 export type PrintableDocumentType =
   | 'INVOICE_A4'
@@ -1457,9 +1458,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return `${day} ${month} ${year}, ${strHours}:${minutes}:${seconds} ${ampm}`;
   };
 
+  useEffect(() => {
+    fetchClientDeviceInfo().catch(() => {});
+  }, []);
+
   const logActivity = (logData: Omit<ActivityLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'role'>) => {
     const now = new Date();
     const formattedTime = formatDeletionTimestamp(now);
+    const clientInfo = getCachedClientDeviceInfo();
     const newLog: ActivityLog = {
       ...logData,
       id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -1467,6 +1473,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       userId: currentUser?.id || 'usr-1',
       userName: currentUser?.fullName || 'Mohammad Shafiul Islam',
       role: currentUser?.role || 'ADMIN',
+      ip: logData.ip || clientInfo.ip,
+      location: logData.location || clientInfo.location,
+      device: logData.device || clientInfo.device,
+      browser: logData.browser || clientInfo.browser,
+      os: logData.os || clientInfo.os,
     };
     setActivityLogs(prev => [newLog, ...prev]);
   };
@@ -1492,6 +1503,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const logout = () => {
+    const clientInfo = getCachedClientDeviceInfo();
+    const logoutLog: ActivityLog = {
+      id: `act-logout-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: formatDeletionTimestamp(new Date()),
+      actionType: 'LOGOUT',
+      title: language === 'bn' ? 'লগআউট (User Logout)' : 'User Logout',
+      description: language === 'bn'
+        ? `ইউজার '${currentUser?.fullName || 'User'}' সফলভাবে লগআউট করেছেন।`
+        : `User '${currentUser?.fullName || 'User'}' logged out from the system.`,
+      severity: 'info',
+      userId: currentUser?.id,
+      userName: currentUser?.fullName,
+      role: currentUser?.role,
+      ip: clientInfo.ip,
+      location: clientInfo.location,
+      device: clientInfo.device,
+      browser: clientInfo.browser,
+      os: clientInfo.os,
+    };
+    setActivityLogs(prev => [logoutLog, ...prev]);
+
     try {
       sessionStorage.removeItem('DOKANPRO_IS_LOGGED_IN');
       sessionStorage.removeItem('DOKANPRO_CURRENT_USER');
@@ -1525,6 +1557,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!isTabAllowed(found, activeTab)) {
         setActiveTab(getFirstAllowedTab(found));
       }
+
+      // Record Activity Log with IP, Location & Device
+      const clientInfo = getCachedClientDeviceInfo();
+      const loginLog: ActivityLog = {
+        id: `act-login-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        timestamp: formatDeletionTimestamp(new Date()),
+        actionType: 'LOGIN',
+        title: language === 'bn' ? 'সফল লগইন (User Login)' : 'User Login Successful',
+        description: language === 'bn'
+          ? `ইউজার '${found.fullName}' (${found.username}) সফলভাবে সিস্টেমে লগইন করেছেন। আইপি: ${clientInfo.ip}, লোকেশন: ${clientInfo.location}, ডিভাইস: ${clientInfo.device}`
+          : `User '${found.fullName}' (${found.username}) successfully logged in. IP: ${clientInfo.ip}, Location: ${clientInfo.location}, Device: ${clientInfo.device}`,
+        severity: 'info',
+        userId: found.id,
+        userName: found.fullName,
+        role: found.role,
+        targetId: found.id,
+        targetName: found.fullName,
+        ip: clientInfo.ip,
+        location: clientInfo.location,
+        device: clientInfo.device,
+        browser: clientInfo.browser,
+        os: clientInfo.os,
+      };
+      setActivityLogs(prev => [loginLog, ...prev]);
+
       showToast(language === 'bn' ? `স্বাগতম, ${found.fullName}!` : `Welcome back, ${found.fullName}!`, 'success');
       return true;
     }
@@ -1557,6 +1614,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!isTabAllowed(targetUser, activeTab)) {
         setActiveTab(getFirstAllowedTab(targetUser));
       }
+
+      const clientInfo = getCachedClientDeviceInfo();
+      const switchLog: ActivityLog = {
+        id: `act-switch-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        timestamp: formatDeletionTimestamp(new Date()),
+        actionType: 'USER_ACTION',
+        title: language === 'bn' ? 'ইউজার পরিবর্তন (User Switch)' : 'User Switched',
+        description: language === 'bn'
+          ? `'${currentUser.fullName}' হতে '${targetUser.fullName}' ইউজারে সুইচ করা হয়েছে। আইপি: ${clientInfo.ip}, লোকেশন: ${clientInfo.location}, ডিভাইস: ${clientInfo.device}`
+          : `Switched user from '${currentUser.fullName}' to '${targetUser.fullName}'. IP: ${clientInfo.ip}, Location: ${clientInfo.location}, Device: ${clientInfo.device}`,
+        severity: 'info',
+        userId: targetUser.id,
+        userName: targetUser.fullName,
+        role: targetUser.role,
+        targetId: targetUser.id,
+        targetName: targetUser.fullName,
+        ip: clientInfo.ip,
+        location: clientInfo.location,
+        device: clientInfo.device,
+        browser: clientInfo.browser,
+        os: clientInfo.os,
+      };
+      setActivityLogs(prev => [switchLog, ...prev]);
+
       showToast(
         language === 'bn'
           ? `এডমিন হিসেবে '${targetUser.fullName}' আইডিতে সরাসরি লগইন করা হয়েছে।`
@@ -1589,6 +1670,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!isTabAllowed(targetUser, activeTab)) {
       setActiveTab(getFirstAllowedTab(targetUser));
     }
+
+    const clientInfo = getCachedClientDeviceInfo();
+    const switchLog: ActivityLog = {
+      id: `act-switch-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: formatDeletionTimestamp(new Date()),
+      actionType: 'USER_ACTION',
+      title: language === 'bn' ? 'ইউজার পরিবর্তন (User Switch)' : 'User Switched',
+      description: language === 'bn'
+        ? `'${currentUser.fullName}' হতে '${targetUser.fullName}' ইউজারে সুইচ করা হয়েছে। আইপি: ${clientInfo.ip}, লোকেশন: ${clientInfo.location}, ডিভাইস: ${clientInfo.device}`
+        : `Switched user from '${currentUser.fullName}' to '${targetUser.fullName}'. IP: ${clientInfo.ip}, Location: ${clientInfo.location}, Device: ${clientInfo.device}`,
+      severity: 'info',
+      userId: targetUser.id,
+      userName: targetUser.fullName,
+      role: targetUser.role,
+      targetId: targetUser.id,
+      targetName: targetUser.fullName,
+      ip: clientInfo.ip,
+      location: clientInfo.location,
+      device: clientInfo.device,
+      browser: clientInfo.browser,
+      os: clientInfo.os,
+    };
+    setActivityLogs(prev => [switchLog, ...prev]);
+
     showToast(
       language === 'bn'
         ? `সফলভাবে '${targetUser.fullName}' হিসেবে লগইন করা হয়েছে।`

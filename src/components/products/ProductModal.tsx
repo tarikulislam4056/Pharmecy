@@ -803,6 +803,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           </div>
 
           {/* Warranty & Serial Configuration Box */}
+          {!isPharmacyMode && (
           <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-50/70 to-blue-50/50 dark:from-indigo-950/40 dark:to-slate-900 border border-indigo-200 dark:border-indigo-800/60 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -903,6 +904,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               </div>
             )}
           </div>
+          )}
         </form>
 
         {/* Footer */}

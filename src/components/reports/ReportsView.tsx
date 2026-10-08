@@ -4,6 +4,7 @@ import { useTranslation } from '../../i18n/translations';
 import { DatePeriodFilter } from '../common/DatePeriodFilter';
 import { BatchReportView } from './BatchReportView';
 import { ExpiryReportView } from './ExpiryReportView';
+import { GenericReportView } from './GenericReportView';
 import {
   canUserExportReportCsv,
   canUserDownloadReportPdf,
@@ -36,6 +37,7 @@ import {
   Tag,
   Boxes,
   Clock,
+  Pill,
 } from 'lucide-react';
 
 export type ReportKind =
@@ -49,7 +51,8 @@ export type ReportKind =
   | 'cat-sales'
   | 'cat-purchase'
   | 'party-ledger'
-  | 'expiry-report';
+  | 'expiry-report'
+  | 'generic-report';
 
 interface ReportsViewProps {
   initialReportType?: ReportKind;
@@ -97,9 +100,19 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
 
   useEffect(() => {
     if (initialReportType) {
-      setReportType(initialReportType);
+      if (initialReportType === 'generic-report' && !isPharmacyMode) {
+        setReportType('summary');
+      } else {
+        setReportType(initialReportType);
+      }
     }
-  }, [initialReportType]);
+  }, [initialReportType, isPharmacyMode]);
+
+  useEffect(() => {
+    if (!isPharmacyMode && reportType === 'generic-report') {
+      setReportType('summary');
+    }
+  }, [isPharmacyMode, reportType]);
 
   // General States & Stock Summary Filters
   const [selectedProductId, setSelectedProductId] = useState<string>(products[0]?.id || '');
@@ -1465,7 +1478,25 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
         >
           {language === 'bn' ? 'পার্টি লেজার' : 'Party Ledger'}
         </button>
+        {isPharmacyMode && (
+          <button
+            type="button"
+            onClick={() => setReportType('generic-report')}
+            className={`py-2 px-1.5 rounded-lg font-semibold truncate transition-colors cursor-pointer text-center flex items-center justify-center gap-1 ${
+              reportType === 'generic-report'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800'
+            }`}
+            title={language === 'bn' ? 'জেনেরিক অনুযায়ী ঔষধ ও স্টক রিপোর্ট' : 'Generic Wise Medicine & Stock Report'}
+          >
+            <Pill className="w-3.5 h-3.5" />
+            <span>{language === 'bn' ? 'জেনেরিক রিপোর্ট' : 'Generic Report'}</span>
+          </button>
+        )}
       </div>
+
+      {/* GENERIC REPORT (Pharmacy Mode Only) */}
+      {isPharmacyMode && reportType === 'generic-report' && <GenericReportView />}
 
       {/* BATCH & EXPIRY REPORT */}
       {reportType === 'batch-report' && <BatchReportView />}

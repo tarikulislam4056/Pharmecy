@@ -985,7 +985,7 @@ export interface ExpiredReturnLog {
 export interface ActivityLog {
   id: string;
   timestamp: string;
-  actionType: 'DELETE' | 'STOCK_ADJUSTMENT' | 'PRICE_CHANGE' | 'SETTINGS_UPDATE' | 'USER_ACTION';
+  actionType: 'DELETE' | 'STOCK_ADJUSTMENT' | 'PRICE_CHANGE' | 'SETTINGS_UPDATE' | 'USER_ACTION' | 'LOGIN' | 'LOGOUT';
   title: string;
   description: string;
   severity: 'info' | 'warning' | 'danger';
@@ -994,6 +994,11 @@ export interface ActivityLog {
   role?: string;
   targetId?: string;
   targetName?: string;
+  ip?: string;
+  location?: string;
+  device?: string;
+  browser?: string;
+  os?: string;
 }
 
 export type ViewTab =

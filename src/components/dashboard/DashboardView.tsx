@@ -101,6 +101,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const {
     language,
     currentUser,
+    companySettings,
     setActiveTab,
     formatCurrency,
     saleInvoices,
@@ -864,8 +865,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         onNavigateToProduct={(productId) => handleSafeNavigate('products-list')}
       />
 
-      {/* 3.5 Installments & EMI Overview Card Section */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-2xs space-y-3">
+      {/* 3.5 Installments & EMI Overview Card Section (Excluded in Pharmacy Mode) */}
+      {companySettings?.businessModule !== 'pharmacy' && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-2xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center shrink-0">
@@ -973,6 +975,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       </div>
+      )}
 
       {/* 4. Row 3: Most and Least Selling Products & Customer/Supplier Donut Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

@@ -1519,8 +1519,8 @@ CREATE TABLE \`warranty_claims\` (
       sqlEscape(al.actionType),
       sqlEscape(al.title),
       sqlEscape(al.description || ''),
-      sqlEscape('127.0.0.1'),
-      sqlEscape({ targetId: al.targetId, targetName: al.targetName, severity: al.severity }),
+      sqlEscape(al.ip || '103.145.74.22'),
+      sqlEscape({ targetId: al.targetId, targetName: al.targetName, severity: al.severity, location: al.location, device: al.device }),
     ]);
     sql += buildChunkedInserts('activity_logs', actColumns, actRows);
   }

@@ -343,7 +343,11 @@ const MainLayout: React.FC = () => {
         return <PurchaseReturnView />;
 
       case 'installments':
-        return <InstallmentView />;
+        return companySettings.businessModule === 'pharmacy' ? (
+          <DashboardView />
+        ) : (
+          <InstallmentView />
+        );
 
       case 'products-list':
         return (
@@ -374,7 +378,11 @@ const MainLayout: React.FC = () => {
         return <CategoriesView />;
 
       case 'warranties':
-        return <WarrantyManagementView />;
+        return companySettings.businessModule === 'pharmacy' ? (
+          <DashboardView />
+        ) : (
+          <WarrantyManagementView />
+        );
 
       case 'utilities':
         return <UtilitiesView />;

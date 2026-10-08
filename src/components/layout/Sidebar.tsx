@@ -809,6 +809,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   >
                     <span>{language === 'bn' ? '📦 ব্যাচ ও মেয়াদ রিপোর্ট' : '📦 Batch & Expiry Report'}</span>
                   </button>
+                  {companySettings.businessModule === 'pharmacy' && (
+                    <button
+                      type="button"
+                      onClick={() => handleSubReportClick('generic-report' as ReportKind)}
+                      className="w-full text-left py-1.5 px-2.5 rounded-lg font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer truncate flex items-center gap-1.5"
+                    >
+                      <Pill className="w-4 h-4 shrink-0" />
+                      <span>{language === 'bn' ? '💊 জেনেরিক রিপোর্ট' : '💊 Generic Report'}</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleSubReportClick('ledger')}
