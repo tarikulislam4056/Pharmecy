@@ -123,6 +123,12 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
     }
   }, [heldBills]);
 
+  useEffect(() => {
+    if (isPharmacyMode && saleMode === 'INSTALLMENT') {
+      setSaleMode('CASH');
+    }
+  }, [isPharmacyMode, saleMode]);
+
   // Party Selection
   const [searchPartyQuery, setSearchPartyQuery] = useState('');
   const [showPartyDropdown, setShowPartyDropdown] = useState(false);

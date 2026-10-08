@@ -89,7 +89,7 @@ import {
 } from '../data/mockInitialData';
 import { getFirstAllowedTab, isTabAllowed } from '../utils/permissions';
 import { isExpiredDate } from '../utils/dateUtils';
-import { getCachedClientDeviceInfo, fetchClientDeviceInfo } from '../utils/clientDevice';
+import { getCachedClientDeviceInfo, fetchClientDeviceInfo, ClientDeviceInfo } from '../utils/clientDevice';
 
 export type PrintableDocumentType =
   | 'INVOICE_A4'
@@ -200,6 +200,8 @@ interface AppContextType {
   cashAdjustments: CashAdjustment[];
   activityLogs: ActivityLog[];
   logActivity: (log: Omit<ActivityLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'role'>) => void;
+  clientDeviceInfo: ClientDeviceInfo;
+  refreshDeviceLocation: () => Promise<ClientDeviceInfo>;
   users: UserAccount[];
   currentUser: UserAccount;
   setCurrentUser: (user: UserAccount) => void;
@@ -1458,29 +1460,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return `${day} ${month} ${year}, ${strHours}:${minutes}:${seconds} ${ampm}`;
   };
 
+  const [clientDeviceInfo, setClientDeviceInfo] = useState<ClientDeviceInfo>(() => getCachedClientDeviceInfo());
+
+  const handleRefreshDeviceLocation = async (): Promise<ClientDeviceInfo> => {
+    const info = await fetchClientDeviceInfo(true);
+    setClientDeviceInfo(info);
+    return info;
+  };
+
   useEffect(() => {
-    fetchClientDeviceInfo().catch(() => {});
+    fetchClientDeviceInfo(true)
+      .then(info => setClientDeviceInfo(info))
+      .catch(() => {});
   }, []);
 
-  const logActivity = (logData: Omit<ActivityLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'role'>) => {
-    const now = new Date();
-    const formattedTime = formatDeletionTimestamp(now);
-    const clientInfo = getCachedClientDeviceInfo();
-    const newLog: ActivityLog = {
-      ...logData,
-      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      timestamp: formattedTime,
-      userId: currentUser?.id || 'usr-1',
-      userName: currentUser?.fullName || 'Mohammad Shafiul Islam',
-      role: currentUser?.role || 'ADMIN',
-      ip: logData.ip || clientInfo.ip,
-      location: logData.location || clientInfo.location,
-      device: logData.device || clientInfo.device,
-      browser: logData.browser || clientInfo.browser,
-      os: logData.os || clientInfo.os,
-    };
-    setActivityLogs(prev => [newLog, ...prev]);
-  };
   const [users, setUsers] = useState<UserAccount[]>(() => getPersistedData('users', initialUsers));
   const [currentUser, setCurrentUser] = useState<UserAccount>(() => {
     try {
@@ -1501,6 +1494,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return false;
     }
   });
+
+  // Auto-logout and record audit entry when user leaves / closes the site ("সাইট থেকে বের হলে লগআউট দেখাবে")
+  useEffect(() => {
+    const handleSiteExit = () => {
+      try {
+        const isAuth = sessionStorage.getItem('DOKANPRO_IS_LOGGED_IN') === 'true';
+        if (isAuth && currentUser) {
+          const clientInfo = getCachedClientDeviceInfo();
+          const exitTime = formatDeletionTimestamp(new Date());
+          const exitLog: ActivityLog = {
+            id: `act-exit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            timestamp: exitTime,
+            actionType: 'LOGOUT',
+            title: language === 'bn' ? 'লগআউট (সাইট ত্যাগ / Exit)' : 'User Logged Out (Site Exit)',
+            description: language === 'bn'
+              ? `ইউজার '${currentUser.fullName}' (${currentUser.username}) সাইট থেকে বের হয়েছেন এবং সেশন সমাপ্ত হয়েছে। আইপি: ${clientInfo.ip}, লোকেশন: ${clientInfo.location}, ডিভাইস: ${clientInfo.device}`
+              : `User '${currentUser.fullName}' (${currentUser.username}) exited the site and session was logged out. IP: ${clientInfo.ip}, Location: ${clientInfo.location}, Device: ${clientInfo.device}`,
+            severity: 'info',
+            userId: currentUser.id,
+            userName: currentUser.fullName,
+            role: currentUser.role,
+            ip: clientInfo.ip,
+            location: clientInfo.location,
+            device: clientInfo.device,
+            browser: clientInfo.browser,
+            os: clientInfo.os,
+          };
+
+          // Synchronously clear session auth so reopening shows logged out
+          sessionStorage.removeItem('DOKANPRO_IS_LOGGED_IN');
+          sessionStorage.removeItem('DOKANPRO_CURRENT_USER');
+
+          // Synchronously save exit logout to localStorage
+          try {
+            const rawLogs = localStorage.getItem('DOKANPRO_activityLogs');
+            const existingLogs: ActivityLog[] = rawLogs ? JSON.parse(rawLogs) : [];
+            const updated = [exitLog, ...existingLogs.filter(l => l.id !== exitLog.id)];
+            localStorage.setItem('DOKANPRO_activityLogs', JSON.stringify(updated));
+          } catch {}
+        }
+      } catch {}
+    };
+
+    window.addEventListener('pagehide', handleSiteExit);
+    window.addEventListener('beforeunload', handleSiteExit);
+
+    return () => {
+      window.removeEventListener('pagehide', handleSiteExit);
+      window.removeEventListener('beforeunload', handleSiteExit);
+    };
+  }, [currentUser, language]);
+
+  const logActivity = (logData: Omit<ActivityLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'role'>) => {
+    const now = new Date();
+    const formattedTime = formatDeletionTimestamp(now);
+    const clientInfo = getCachedClientDeviceInfo();
+    const newLog: ActivityLog = {
+      ...logData,
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: formattedTime,
+      userId: currentUser?.id || 'usr-1',
+      userName: currentUser?.fullName || 'Mohammad Shafiul Islam',
+      role: currentUser?.role || 'ADMIN',
+      ip: logData.ip || clientInfo.ip,
+      location: logData.location || clientInfo.location,
+      device: logData.device || clientInfo.device,
+      browser: logData.browser || clientInfo.browser,
+      os: logData.os || clientInfo.os,
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
 
   const logout = () => {
     const clientInfo = getCachedClientDeviceInfo();

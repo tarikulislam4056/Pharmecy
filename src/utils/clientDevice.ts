@@ -1,6 +1,6 @@
 /**
  * Client Device, IP and Location detection utility
- * Captures real IP, Geolocation and Device / Browser environment for Security & Activity Logs.
+ * Captures real IP, Device GPS / Geolocation and Hardware / Browser environment for Security & Activity Logs.
  */
 
 export interface ClientDeviceInfo {
@@ -10,6 +10,10 @@ export interface ClientDeviceInfo {
   browser: string;
   os: string;
   userAgent: string;
+  isGps?: boolean;
+  latitude?: number;
+  longitude?: number;
+  accuracy?: number;
 }
 
 const STORAGE_KEY = 'DOKANPRO_CLIENT_INFO_CACHE';
@@ -74,6 +78,8 @@ export const getFallbackLocation = (): string => {
     if (tz.includes('Dhaka')) return 'Dhaka, Bangladesh';
     if (tz.includes('Chittagong')) return 'Chittagong, Bangladesh';
     if (tz.includes('Sylhet')) return 'Sylhet, Bangladesh';
+    if (tz.includes('Rajshahi')) return 'Rajshahi, Bangladesh';
+    if (tz.includes('Khulna')) return 'Khulna, Bangladesh';
     if (tz.includes('Kolkata')) return 'Kolkata, India';
     if (tz.includes('London')) return 'London, UK';
     if (tz.includes('New_York')) return 'New York, USA';
@@ -84,6 +90,96 @@ export const getFallbackLocation = (): string => {
     }
   } catch {}
   return 'Bangladesh';
+};
+
+// Check if Device GPS / Location is turned on and permitted
+export const tryGetDeviceGpsLocation = async (): Promise<{
+  location: string;
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+} | null> => {
+  if (typeof window === 'undefined' || !navigator || !navigator.geolocation) {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    const timeoutId = setTimeout(() => {
+      resolve(null);
+    }, 4000);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        clearTimeout(timeoutId);
+        const { latitude, longitude, accuracy } = pos.coords;
+
+        // Reverse geocoding via OpenStreetMap Nominatim
+        try {
+          const controller = new AbortController();
+          const abortTimer = setTimeout(() => controller.abort(), 3000);
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14&addressdetails=1`,
+            {
+              signal: controller.signal,
+              headers: { 'User-Agent': 'DokanProERP/1.0' },
+            }
+          );
+          clearTimeout(abortTimer);
+
+          if (res.ok) {
+            const data = await res.json();
+            const addr = data.address || {};
+            const area =
+              addr.suburb ||
+              addr.neighbourhood ||
+              addr.residential ||
+              addr.village ||
+              addr.town ||
+              addr.city_district ||
+              addr.road ||
+              '';
+            const city = addr.city || addr.town || addr.county || addr.state || '';
+            const country = addr.country || 'Bangladesh';
+
+            let locName = '';
+            if (area && city && area !== city) {
+              locName = `${area}, ${city}, ${country}`;
+            } else if (city) {
+              locName = `${city}, ${country}`;
+            } else {
+              locName = country;
+            }
+
+            resolve({
+              location: `${locName} (📍 GPS)`,
+              latitude,
+              longitude,
+              accuracy,
+            });
+            return;
+          }
+        } catch {
+          // Ignore reverse geocode failure and use coordinates
+        }
+
+        resolve({
+          location: `GPS: ${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E (📍 GPS)`,
+          latitude,
+          longitude,
+          accuracy,
+        });
+      },
+      (_err) => {
+        clearTimeout(timeoutId);
+        resolve(null);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 4000,
+        maximumAge: 30000,
+      }
+    );
+  });
 };
 
 let inMemoryCache: ClientDeviceInfo | null = null;
@@ -112,7 +208,7 @@ export const getCachedClientDeviceInfo = (): ClientDeviceInfo => {
   } catch {}
 
   inMemoryCache = {
-    ip: '103.145.74.22', // Standard Bangladeshi ISP IP representation as initial default
+    ip: '103.145.74.22', // Bangladeshi ISP public IP representation
     location: fallbackLocation,
     device,
     browser,
@@ -123,12 +219,22 @@ export const getCachedClientDeviceInfo = (): ClientDeviceInfo => {
   return inMemoryCache;
 };
 
-// Fetch real public IP and Geolocation
-export const fetchClientDeviceInfo = async (): Promise<ClientDeviceInfo> => {
+// Fetch real public IP, check Device GPS and Geolocation
+export const fetchClientDeviceInfo = async (promptGps: boolean = true): Promise<ClientDeviceInfo> => {
   const { device, browser, os } = detectDeviceDetails();
   const fallbackLocation = getFallbackLocation();
 
-  // Try ipapi.co or ipify
+  let gpsData: { location: string; latitude: number; longitude: number; accuracy: number } | null = null;
+  if (promptGps) {
+    try {
+      gpsData = await tryGetDeviceGpsLocation();
+    } catch {}
+  }
+
+  let ip = inMemoryCache?.ip || '103.145.74.22';
+  let ipLocation = fallbackLocation;
+
+  // Try ipapi.co
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3500);
@@ -140,28 +246,13 @@ export const fetchClientDeviceInfo = async (): Promise<ClientDeviceInfo> => {
 
     if (res.ok) {
       const data = await res.json();
-      const ip = data.ip || '103.145.74.22';
+      ip = data.ip || ip;
       const city = data.city || '';
       const country = data.country_name || 'Bangladesh';
-      const location = city ? `${city}, ${country}` : country;
-
-      const info: ClientDeviceInfo = {
-        ip,
-        location,
-        device,
-        browser,
-        os,
-        userAgent: navigator.userAgent || '',
-      };
-
-      inMemoryCache = info;
-      try {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(info));
-      } catch {}
-      return info;
+      ipLocation = city ? `${city}, ${country}` : country;
     }
   } catch {
-    // Secondary fallback to ipify for IP only
+    // Secondary fallback to ipify for IP
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2500);
@@ -169,34 +260,35 @@ export const fetchClientDeviceInfo = async (): Promise<ClientDeviceInfo> => {
       clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
-        const ip = data.ip || '103.145.74.22';
-        const info: ClientDeviceInfo = {
-          ip,
-          location: fallbackLocation,
-          device,
-          browser,
-          os,
-          userAgent: navigator.userAgent || '',
-        };
-        inMemoryCache = info;
-        try {
-          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(info));
-        } catch {}
-        return info;
+        ip = data.ip || ip;
       }
     } catch {}
   }
 
-  // Final fallback
-  const finalInfo: ClientDeviceInfo = {
-    ip: inMemoryCache?.ip || '103.145.74.22',
-    location: fallbackLocation,
+  // If Device GPS was active and returned location, prefer Device GPS location!
+  const finalLocation = gpsData ? gpsData.location : ipLocation;
+
+  const info: ClientDeviceInfo = {
+    ip,
+    location: finalLocation,
     device,
     browser,
     os,
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+    isGps: Boolean(gpsData),
+    latitude: gpsData?.latitude,
+    longitude: gpsData?.longitude,
+    accuracy: gpsData?.accuracy,
   };
 
-  inMemoryCache = finalInfo;
-  return finalInfo;
+  inMemoryCache = info;
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(info));
+  } catch {}
+  return info;
+};
+
+// Manually trigger device GPS location refresh (e.g. from user click)
+export const refreshClientDeviceLocation = async (): Promise<ClientDeviceInfo> => {
+  return await fetchClientDeviceInfo(true);
 };
