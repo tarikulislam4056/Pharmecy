@@ -28,11 +28,19 @@ import {
   CheckCircle2,
   Clock,
   Keyboard,
+  AlertTriangle,
+  Bell,
+  ShieldAlert,
 } from 'lucide-react';
 import { VoucherSearchModal } from '../common/VoucherSearchModal';
+import { ExpiryAlertModal } from '../common/ExpiryAlertModal';
 import { DemandForecastWidget } from './DemandForecastWidget';
 import { ExpiryDashboardWidget } from './ExpiryDashboardWidget';
 import { isTabAllowed, hasPermission } from '../../utils/permissions';
+import {
+  getExpiringProductsWithinDays,
+  triggerExpiryPushNotifications,
+} from '../../utils/expiryNotificationService';
 import { ViewTab } from '../../types';
 
 interface DashboardViewProps {
@@ -124,6 +132,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [infoTooltip, setInfoTooltip] = useState<string | null>(null);
   const [dashboardSearchQuery, setDashboardSearchQuery] = useState('');
   const [isVoucherSearchOpen, setIsVoucherSearchOpen] = useState(false);
+  const [isExpiryModalOpen, setIsExpiryModalOpen] = useState(false);
+
+  // Products expiring within 5 days (User requirement: 5 days prior alert in admin panel)
+  const expiring5DaysItems = useMemo(() => {
+    return getExpiringProductsWithinDays(products, 5);
+  }, [products]);
 
   const handleSafeNavigate = (tab: ViewTab) => {
     if (isTabAllowed(currentUser, tab)) {
@@ -492,6 +506,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* 1.5 5-Day Expiry Push Notification Alert Banner (Admin Panel Requirement) */}
+      {hasPermission(currentUser, 'PRODUCTS_INVENTORY') && expiring5DaysItems.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-transparent border border-amber-300 dark:border-amber-800/80 rounded-2xl p-3.5 sm:p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-500/20">
+              <Bell className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                  {language === 'bn' ? '⚠️ জরুরি মেয়াদ সতর্কতা: ৫ দিনের মধ্যে মেয়াদ শেষ হচ্ছে!' : '⚠️ Urgent Expiry Alert: Items Expiring Within 5 Days!'}
+                </h4>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white font-mono">
+                  {expiring5DaysItems.length}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
+                {language === 'bn'
+                  ? `'${expiring5DaysItems[0].productName}' সহ ${expiring5DaysItems.length}টি পণ্যের মেয়াদ আগামী ৫ দিন বা তার চেয়ে কম সময়ে শেষ হচ্ছে। অ্যাডমিন প্যানেলে পুশ নোটিফিকেশন চেক করুন।`
+                  : `'${expiring5DaysItems[0].productName}' and ${expiring5DaysItems.length - 1} more items expire in 5 days or less. Check push notification center.`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setIsExpiryModalOpen(true)}
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+            >
+              <Bell className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'পুশ অ্যালার্ট ও তালিকা দেখুন' : 'View Alerts & Push'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSafeNavigate('batch-inventory')}
+              className="inline-flex items-center justify-center px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+            >
+              <span>{language === 'bn' ? 'ব্যাচ ইনভেন্টরি' : 'Batch Inventory'}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. Top 4 Stat Metric Cards (Row 1) - 2x2 on Mobile, 4 Cols on Large Screen */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
@@ -1216,6 +1274,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         isOpen={isVoucherSearchOpen}
         onClose={() => setIsVoucherSearchOpen(false)}
         initialQuery={dashboardSearchQuery}
+      />
+
+      {/* 5-Day Expiry Alert Modal */}
+      <ExpiryAlertModal
+        isOpen={isExpiryModalOpen}
+        onClose={() => setIsExpiryModalOpen(false)}
+        onNavigateToBatches={() => handleSafeNavigate('batch-inventory')}
+        onNavigateToProducts={() => handleSafeNavigate('products-list')}
       />
     </div>
   );

@@ -109,7 +109,89 @@ export const initialUsers: UserAccount[] = [
   },
 ];
 
-export const initialProducts: Product[] = [];
+const getRelativeDateStr = (daysOffset: number): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + daysOffset);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+export const initialProducts: Product[] = [
+  {
+    id: 'prod-exp-1',
+    name: 'Napa Extra 500mg Tablet',
+    nameBn: 'নাপা এক্সট্রা ৫০০ মি.গ্রা. ট্যাবলেট',
+    barcode: '894110022301',
+    sku: 'MED-NAP-EXT',
+    categoryId: 'cat-1',
+    categoryName: 'Tablet',
+    unit: 'Pack',
+    purchasePrice: 25,
+    salesPrice: 30,
+    discount: 0,
+    discountType: 'percentage',
+    expDate: getRelativeDateStr(3), // ⚠️ Expiring in 3 days (within 5-day push alert window)
+    generic: 'Paracetamol + Caffeine',
+    manufacturer: 'Beximco Pharmaceuticals Ltd',
+    dosageForm: 'Tablet',
+    strength: '500mg + 65mg',
+    rackLocation: 'Rack A-12',
+    reorderLevel: 10,
+    stock: 85,
+    batchNumber: 'B-NPE2610',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'prod-exp-2',
+    name: 'Zithrin 500mg (Azithromycin)',
+    nameBn: 'জিথ্রিন ৫০০ মি.গ্রা. ক্যাপসুল',
+    barcode: '894110022302',
+    sku: 'MED-ZTH-500',
+    categoryId: 'cat-2',
+    categoryName: 'Capsule',
+    unit: 'Box',
+    purchasePrice: 160,
+    salesPrice: 210,
+    discount: 5,
+    discountType: 'percentage',
+    expDate: getRelativeDateStr(5), // ⚠️ Expiring in 5 days (exact 5-day boundary)
+    generic: 'Azithromycin',
+    manufacturer: 'Square Pharmaceuticals Ltd',
+    dosageForm: 'Capsule',
+    strength: '500mg',
+    rackLocation: 'Rack B-04',
+    reorderLevel: 5,
+    stock: 24,
+    batchNumber: 'B-ZTH2610',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'prod-exp-3',
+    name: 'Seclo 20mg Capsule',
+    nameBn: 'সেকলো ২০ মি.গ্রা. ক্যাপসুল',
+    barcode: '894110022303',
+    sku: 'MED-SCL-020',
+    categoryId: 'cat-2',
+    categoryName: 'Capsule',
+    unit: 'Pack',
+    purchasePrice: 48,
+    salesPrice: 60,
+    discount: 0,
+    discountType: 'percentage',
+    expDate: getRelativeDateStr(180), // Fresh (6 months)
+    generic: 'Omeprazole',
+    manufacturer: 'Square Pharmaceuticals Ltd',
+    dosageForm: 'Capsule',
+    strength: '20mg',
+    rackLocation: 'Rack A-08',
+    reorderLevel: 15,
+    stock: 150,
+    batchNumber: 'B-SCL2704',
+    createdAt: new Date().toISOString(),
+  },
+];
 export const initialParties: Party[] = [];
 export const initialSaleInvoices: SaleInvoice[] = [];
 export const initialDeletedSaleInvoices: DeletedSaleInvoice[] = [];
