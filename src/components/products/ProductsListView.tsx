@@ -35,6 +35,11 @@ import {
   ArrowUpDown,
   Camera,
   MapPin,
+  Check,
+  X,
+  LayoutGrid,
+  List,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface ProductsListViewProps {
@@ -52,6 +57,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
     categories,
     formatCurrency,
     deleteProduct,
+    updateProduct,
     deleteAllProducts,
     expiredReturnLogs,
     deleteExpiredReturnLog,
@@ -68,6 +74,9 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
   // Active View Tab
   const [activeTab, setActiveTab] = useState<'all' | 'batch-inventory' | 'expiry' | 'low-stock' | 'return-logs' | 'write-off-logs' | 'replace-logs'>('all');
   const [expirySubFilter, setExpirySubFilter] = useState<'expired' | 'expiring-soon' | 'fresh' | 'all-dated'>('expired');
+  const [expiryViewMode, setExpiryViewMode] = useState<'columns' | 'table'>('columns');
+  const [quickDateProduct, setQuickDateProduct] = useState<Product | null>(null);
+  const [quickDateValue, setQuickDateValue] = useState<string>('');
 
   // Search and Multi-Dimension Filters
   const [search, setSearch] = useState('');
@@ -127,6 +136,76 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
       return Boolean(summary?.hasFresh);
     }).length;
   }, [products, productExpirySummaries]);
+
+  // Products partitioned for the 3-Column Kanban Board
+  const expiredProducts = useMemo(() => {
+    return products.filter(p => {
+      const summary = productExpirySummaries.get(p.id);
+      return Boolean(summary?.hasExpired);
+    });
+  }, [products, productExpirySummaries]);
+
+  const expiringSoonProducts = useMemo(() => {
+    return products.filter(p => {
+      const summary = productExpirySummaries.get(p.id);
+      return Boolean(summary?.hasExpiringSoon);
+    });
+  }, [products, productExpirySummaries]);
+
+  const freshDatedProducts = useMemo(() => {
+    return products.filter(p => {
+      const summary = productExpirySummaries.get(p.id);
+      return Boolean(summary?.hasFresh);
+    });
+  }, [products, productExpirySummaries]);
+
+  const filteredExpiredProducts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return expiredProducts.filter(p => {
+      if (selectedCategory !== 'ALL' && p.categoryId !== selectedCategory) return false;
+      if (!q) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        (p.nameBn && p.nameBn.toLowerCase().includes(q)) ||
+        p.sku.toLowerCase().includes(q) ||
+        p.barcode.toLowerCase().includes(q) ||
+        (p.generic && p.generic.toLowerCase().includes(q)) ||
+        (p.batchNumber && p.batchNumber.toLowerCase().includes(q))
+      );
+    });
+  }, [expiredProducts, search, selectedCategory]);
+
+  const filteredExpiringSoonProducts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return expiringSoonProducts.filter(p => {
+      if (selectedCategory !== 'ALL' && p.categoryId !== selectedCategory) return false;
+      if (!q) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        (p.nameBn && p.nameBn.toLowerCase().includes(q)) ||
+        p.sku.toLowerCase().includes(q) ||
+        p.barcode.toLowerCase().includes(q) ||
+        (p.generic && p.generic.toLowerCase().includes(q)) ||
+        (p.batchNumber && p.batchNumber.toLowerCase().includes(q))
+      );
+    });
+  }, [expiringSoonProducts, search, selectedCategory]);
+
+  const filteredFreshDatedProducts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return freshDatedProducts.filter(p => {
+      if (selectedCategory !== 'ALL' && p.categoryId !== selectedCategory) return false;
+      if (!q) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        (p.nameBn && p.nameBn.toLowerCase().includes(q)) ||
+        p.sku.toLowerCase().includes(q) ||
+        p.barcode.toLowerCase().includes(q) ||
+        (p.generic && p.generic.toLowerCase().includes(q)) ||
+        (p.batchNumber && p.batchNumber.toLowerCase().includes(q))
+      );
+    });
+  }, [freshDatedProducts, search, selectedCategory]);
   const lowStockCount = useMemo(() => products.filter(p => p.stock <= p.reorderLevel).length, [products]);
   const supplierReturnsCount = useMemo(() => (expiredReturnLogs || []).filter(l => l.actionType === 'RETURN_SUPPLIER').length, [expiredReturnLogs]);
   const writeOffsCount = useMemo(() => (expiredReturnLogs || []).filter(l => l.actionType === 'WRITE_OFF').length, [expiredReturnLogs]);
@@ -710,58 +789,96 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
         <>
           {/* Expiry Sub-Filters Bar if Expiry Tab Active */}
       {activeTab === 'expiry' && (
-        <div className="flex flex-wrap items-center gap-2 bg-purple-50/70 dark:bg-purple-950/40 p-2.5 rounded-xl border border-purple-200 dark:border-purple-900">
-          <span className="text-xs font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1 mr-1">
-            <Clock className="w-3.5 h-3.5" />
-            {language === 'bn' ? 'মেয়াদ স্ট্যাটাস ফিল্টার:' : 'Expiry Status:'}
-          </span>
-          <button
-            type="button"
-            onClick={() => setExpirySubFilter('expired')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-              expirySubFilter === 'expired'
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'bg-white dark:bg-zinc-800 text-rose-700 dark:text-rose-300 hover:bg-rose-100'
-            }`}
-          >
-            <span>{language === 'bn' ? '🔴 মেয়াদোত্তীর্ণ' : '🔴 Expired'}</span>
-            <span className="font-mono">({expiredCount})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setExpirySubFilter('expiring-soon')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-              expirySubFilter === 'expiring-soon'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-300 hover:bg-amber-100'
-            }`}
-          >
-            <span>{language === 'bn' ? '🟡 ৩০ দিনের মধ্যে শেষ' : '🟡 Within 30 Days'}</span>
-            <span className="font-mono">({expiringSoonCount})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setExpirySubFilter('fresh')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-              expirySubFilter === 'fresh'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
-            }`}
-          >
-            <span>{language === 'bn' ? '🟢 সতেজ / বৈধ মেয়াদ' : '🟢 Fresh / Valid'}</span>
-            <span className="font-mono">({freshDatedCount})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setExpirySubFilter('all-dated')}
-            className={`px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-              expirySubFilter === 'all-dated'
-                ? 'bg-purple-600 text-white shadow-xs font-bold'
-                : 'bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-300 hover:bg-purple-100'
-            }`}
-          >
-            {language === 'bn' ? 'সকল মেয়াদযুক্ত পণ্য' : 'All Dated'} ({totalDatedCount})
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-purple-50/70 dark:bg-purple-950/40 p-3 rounded-2xl border border-purple-200 dark:border-purple-900 shadow-2xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5 mr-1">
+              <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span>{language === 'bn' ? 'মেয়াদ স্ট্যাটাস ফিল্টার:' : 'Expiry Status:'}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setExpirySubFilter('expired');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                expirySubFilter === 'expired'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-zinc-800 text-rose-700 dark:text-rose-300 hover:bg-rose-100 border border-rose-200 dark:border-rose-900/60'
+              }`}
+            >
+              <span>{language === 'bn' ? '🔴 মেয়াদোত্তীর্ণ' : '🔴 Expired'}</span>
+              <span className="font-mono bg-black/10 dark:bg-white/10 px-1.5 py-0.2 rounded-full text-[11px]">({expiredCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setExpirySubFilter('expiring-soon');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                expirySubFilter === 'expiring-soon'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-300 hover:bg-amber-100 border border-amber-200 dark:border-amber-900/60'
+              }`}
+            >
+              <span>{language === 'bn' ? '🟡 ৩০ দিনের মধ্যে শেষ' : '🟡 Within 30 Days'}</span>
+              <span className="font-mono bg-black/10 dark:bg-white/10 px-1.5 py-0.2 rounded-full text-[11px]">({expiringSoonCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setExpirySubFilter('fresh');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                expirySubFilter === 'fresh'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-900/60'
+              }`}
+            >
+              <span>{language === 'bn' ? '🟢 সতেজ / বৈধ মেয়াদ' : '🟢 Fresh / Valid'}</span>
+              <span className="font-mono bg-black/10 dark:bg-white/10 px-1.5 py-0.2 rounded-full text-[11px]">({freshDatedCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setExpirySubFilter('all-dated');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer border ${
+                expirySubFilter === 'all-dated'
+                  ? 'bg-purple-600 text-white shadow-xs font-bold border-purple-600'
+                  : 'bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-300 hover:bg-purple-100 border-purple-200 dark:border-purple-800'
+              }`}
+            >
+              {language === 'bn' ? 'সকল মেয়াদযুক্ত পণ্য' : 'All Dated'} ({totalDatedCount})
+            </button>
+          </div>
+
+          {/* View Mode Toggle: 3 Columns Board vs Table */}
+          <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-purple-200 dark:border-purple-800 text-xs shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setExpiryViewMode('columns')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                expiryViewMode === 'columns'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? '৩টি কলাম ভিউ (Kanban)' : '3 Columns Kanban'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setExpiryViewMode('table')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                expiryViewMode === 'table'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'টেবিল ভিউ' : 'Table View'}</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -1086,7 +1203,308 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
         </div>
       </div>
 
-      {/* 6. Products Table or Logs Table */}
+      {/* 6. Either 3 Columns Kanban Board (when expiry tab & columns mode) OR Products Table */}
+      {activeTab === 'expiry' && expiryViewMode === 'columns' ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Column 1: 🔴 Expired */}
+          <div className="bg-rose-50/40 dark:bg-rose-950/20 rounded-2xl border-2 border-rose-200 dark:border-rose-900/50 p-3.5 flex flex-col min-h-[520px]">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-rose-200 dark:border-rose-900/50">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+                <div>
+                  <h3 className="font-bold text-sm text-rose-900 dark:text-rose-200">
+                    🔴 {language === 'bn' ? 'মেয়াদোত্তীর্ণ (Expired)' : 'Expired'}
+                  </h3>
+                  <p className="text-[10px] text-rose-700/80 dark:text-rose-400">
+                    {language === 'bn' ? 'মেয়াদ শেষ হয়ে যাওয়া স্টক' : 'Items past expiry date'}
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-rose-600 text-white shadow-xs">
+                {filteredExpiredProducts.length}
+              </span>
+            </div>
+
+            <div className="space-y-3 flex-1 overflow-y-auto max-h-[750px] pr-1">
+              {filteredExpiredProducts.length === 0 ? (
+                <div className="h-48 flex flex-col items-center justify-center text-center p-4 text-zinc-400">
+                  <ShieldCheck className="w-10 h-10 text-rose-300 dark:text-rose-800 mb-2" />
+                  <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                    {language === 'bn' ? 'কোনো মেয়াদোত্তীর্ণ পণ্য নেই!' : 'No expired items!'}
+                  </p>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">
+                    {language === 'bn' ? 'সব পণ্য নিরাপদ ও বৈধ মেয়াদে রয়েছে' : 'All items have valid shelf life'}
+                  </p>
+                </div>
+              ) : (
+                filteredExpiredProducts.map(p => {
+                  const summary = productExpirySummaries.get(p.id) || getProductExpirySummary(p, 30);
+                  return (
+                    <div
+                      key={p.id}
+                      className="bg-white dark:bg-zinc-900 rounded-xl p-3.5 border border-rose-200 dark:border-rose-900/60 shadow-xs hover:shadow-md transition-all space-y-2.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-xs text-zinc-900 dark:text-white leading-tight truncate">
+                            {p.name}
+                          </h4>
+                          {p.nameBn && <div className="text-[11px] text-zinc-500 truncate">{p.nameBn}</div>}
+                          <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                            SKU: {p.sku} {p.batchNumber ? `• Batch: ${p.batchNumber}` : ''}
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 whitespace-nowrap">
+                          {p.stock} {p.unit}
+                        </span>
+                      </div>
+
+                      {/* Expiry Badge */}
+                      <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-300 font-mono font-bold text-[11px]">
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <span>{summary.formattedDisplayDate || p.expDate}</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                          {summary.minDaysRemaining !== null ? `${Math.abs(summary.minDaysRemaining)} দিন পূর্বে শেষ` : 'মেয়াদ শেষ'}
+                        </span>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-1 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickDateProduct(p);
+                            setQuickDateValue(summary.formattedDisplayDate || p.expDate || '');
+                          }}
+                          className="flex-1 py-1.5 px-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title={language === 'bn' ? 'মেয়াদ তারিখ পরিবর্তন করুন' : 'Change Expiry Date'}
+                        >
+                          <Calendar className="w-3 h-3" />
+                          <span>{language === 'bn' ? 'তারিখ পরিবর্তন' : 'Change Date'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReplaceProduct(p)}
+                          className="py-1.5 px-2 rounded-lg bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title="রিপ্লেস বা ফ্রেশ ব্যাচ"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>{language === 'bn' ? 'রিপ্লেস' : 'Replace'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onOpenEditModal(p)}
+                          className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 rounded-lg transition-colors cursor-pointer"
+                          title="পণ্য বিস্তারিত সম্পাদনা"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Column 2: 🟡 Within 30 Days */}
+          <div className="bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl border-2 border-amber-200 dark:border-amber-900/50 p-3.5 flex flex-col min-h-[520px]">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-amber-200 dark:border-amber-900/50">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                <div>
+                  <h3 className="font-bold text-sm text-amber-900 dark:text-amber-200">
+                    🟡 {language === 'bn' ? '৩০ দিনের মধ্যে শেষ (Within 30 Days)' : 'Within 30 Days'}
+                  </h3>
+                  <p className="text-[10px] text-amber-700/80 dark:text-amber-400">
+                    {language === 'bn' ? 'আসন্ন ৩০ দিনের মধ্যে মেয়াদ শেষ' : 'Expiring in under 30 days'}
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-600 text-white shadow-xs">
+                {filteredExpiringSoonProducts.length}
+              </span>
+            </div>
+
+            <div className="space-y-3 flex-1 overflow-y-auto max-h-[750px] pr-1">
+              {filteredExpiringSoonProducts.length === 0 ? (
+                <div className="h-48 flex flex-col items-center justify-center text-center p-4 text-zinc-400">
+                  <Clock className="w-10 h-10 text-amber-300 dark:text-amber-800 mb-2" />
+                  <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                    {language === 'bn' ? '৩০ দিনের মধ্যে কোনো পণ্য মেয়াদোত্তীর্ণ হচ্ছে না!' : 'No items expiring soon!'}
+                  </p>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">
+                    {language === 'bn' ? 'সব স্টক পর্যাপ্ত মেয়াদযুক্ত' : 'Safe stock expiry buffer'}
+                  </p>
+                </div>
+              ) : (
+                filteredExpiringSoonProducts.map(p => {
+                  const summary = productExpirySummaries.get(p.id) || getProductExpirySummary(p, 30);
+                  return (
+                    <div
+                      key={p.id}
+                      className="bg-white dark:bg-zinc-900 rounded-xl p-3.5 border border-amber-200 dark:border-amber-900/60 shadow-xs hover:shadow-md transition-all space-y-2.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-xs text-zinc-900 dark:text-white leading-tight truncate">
+                            {p.name}
+                          </h4>
+                          {p.nameBn && <div className="text-[11px] text-zinc-500 truncate">{p.nameBn}</div>}
+                          <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                            SKU: {p.sku} {p.batchNumber ? `• Batch: ${p.batchNumber}` : ''}
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 whitespace-nowrap">
+                          {p.stock} {p.unit}
+                        </span>
+                      </div>
+
+                      {/* Expiry Badge */}
+                      <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300 font-mono font-bold text-[11px]">
+                          <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse shrink-0" />
+                          <span>{summary.formattedDisplayDate || p.expDate}</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                          {summary.minDaysRemaining !== null ? `${summary.minDaysRemaining} দিন বাকি` : 'শীঘ্রই শেষ'}
+                        </span>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-1 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickDateProduct(p);
+                            setQuickDateValue(summary.formattedDisplayDate || p.expDate || '');
+                          }}
+                          className="flex-1 py-1.5 px-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title={language === 'bn' ? 'মেয়াদ তারিখ পরিবর্তন করুন' : 'Change Expiry Date'}
+                        >
+                          <Calendar className="w-3 h-3" />
+                          <span>{language === 'bn' ? 'তারিখ পরিবর্তন' : 'Change Date'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReplaceProduct(p)}
+                          className="py-1.5 px-2 rounded-lg bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title="রিপ্লেস বা ফ্রেশ ব্যাচ"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>{language === 'bn' ? 'রিপ্লেস' : 'Replace'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onOpenEditModal(p)}
+                          className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 rounded-lg transition-colors cursor-pointer"
+                          title="পণ্য বিস্তারিত সম্পাদনা"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Column 3: 🟢 Fresh / Valid */}
+          <div className="bg-emerald-50/40 dark:bg-emerald-950/20 rounded-2xl border-2 border-emerald-200 dark:border-emerald-900/50 p-3.5 flex flex-col min-h-[520px]">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-emerald-200 dark:border-emerald-900/50">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <div>
+                  <h3 className="font-bold text-sm text-emerald-900 dark:text-emerald-200">
+                    🟢 {language === 'bn' ? 'সতেজ / বৈধ মেয়াদ (Fresh / Valid)' : 'Fresh / Valid'}
+                  </h3>
+                  <p className="text-[10px] text-emerald-700/80 dark:text-emerald-400">
+                    {language === 'bn' ? '৩০ দিনের বেশি দীর্ঘমেয়াদী স্টক' : 'Valid stock > 30 days'}
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-600 text-white shadow-xs">
+                {filteredFreshDatedProducts.length}
+              </span>
+            </div>
+
+            <div className="space-y-3 flex-1 overflow-y-auto max-h-[750px] pr-1">
+              {filteredFreshDatedProducts.length === 0 ? (
+                <div className="h-48 flex flex-col items-center justify-center text-center p-4 text-zinc-400">
+                  <Package className="w-10 h-10 text-emerald-300 dark:text-emerald-800 mb-2" />
+                  <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                    {language === 'bn' ? 'কোনো সতেজ পণ্য পাওয়া যায়নি!' : 'No fresh items found!'}
+                  </p>
+                </div>
+              ) : (
+                filteredFreshDatedProducts.map(p => {
+                  const summary = productExpirySummaries.get(p.id) || getProductExpirySummary(p, 30);
+                  return (
+                    <div
+                      key={p.id}
+                      className="bg-white dark:bg-zinc-900 rounded-xl p-3.5 border border-emerald-200 dark:border-emerald-900/60 shadow-xs hover:shadow-md transition-all space-y-2.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-xs text-zinc-900 dark:text-white leading-tight truncate">
+                            {p.name}
+                          </h4>
+                          {p.nameBn && <div className="text-[11px] text-zinc-500 truncate">{p.nameBn}</div>}
+                          <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                            SKU: {p.sku} {p.batchNumber ? `• Batch: ${p.batchNumber}` : ''}
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 whitespace-nowrap">
+                          {p.stock} {p.unit}
+                        </span>
+                      </div>
+
+                      {/* Expiry Badge */}
+                      <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-mono font-bold text-[11px]">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>{summary.formattedDisplayDate || p.expDate}</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                          {summary.minDaysRemaining !== null ? `${summary.minDaysRemaining} দিন বাকি (নিরাপদ)` : 'বৈধ'}
+                        </span>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-1 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickDateProduct(p);
+                            setQuickDateValue(summary.formattedDisplayDate || p.expDate || '');
+                          }}
+                          className="flex-1 py-1.5 px-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title={language === 'bn' ? 'মেয়াদ তারিখ পরিবর্তন করুন' : 'Change Expiry Date'}
+                        >
+                          <Calendar className="w-3 h-3" />
+                          <span>{language === 'bn' ? 'তারিখ পরিবর্তন' : 'Change Date'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onOpenEditModal(p)}
+                          className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 rounded-lg transition-colors cursor-pointer"
+                          title="পণ্য বিস্তারিত সম্পাদনা"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+      /* 6. Products Table or Logs Table */
       <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           {activeTab === 'return-logs' || activeTab === 'write-off-logs' || activeTab === 'replace-logs' ? (
@@ -1235,9 +1653,9 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                       <tr
                         key={p.id}
                         className={`hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors ${
-                          itemExpired && p.stock > 0
+                          itemExpired
                             ? 'bg-rose-50/40 dark:bg-rose-950/20'
-                            : itemExpiringSoon && p.stock > 0
+                            : itemExpiringSoon
                             ? 'bg-amber-50/30 dark:bg-amber-950/10'
                             : ''
                         }`}
@@ -1394,27 +1812,53 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                         {/* Expiry Date */}
                         <td className="py-3 px-4 font-mono whitespace-nowrap">
                           {summary.hasAnyExpiry ? (
-                            itemExpired && p.stock > 0 ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 font-bold text-[11px] border border-rose-300 dark:border-rose-900">
-                                <AlertTriangle className="w-3 h-3 text-rose-600" />
-                                {summary.formattedDisplayDate} {p.batches && p.batches.length > 1 ? `(${summary.expiredBatchesCount}টি ব্যাচ শেষ)` : `(মেয়াদ শেষ)`}
-                              </span>
-                            ) : itemExpiringSoon && p.stock > 0 ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 font-bold text-[11px] border border-amber-300 dark:border-amber-900 shadow-2xs">
-                                <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
-                                {summary.formattedDisplayDate} ({summary.minDaysRemaining} দিন বাকি)
-                              </span>
-                            ) : itemFresh ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold text-[11px]">
-                                {summary.formattedDisplayDate} (সতেজ)
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 text-[11px]">
-                                {summary.formattedDisplayDate}
-                              </span>
-                            )
+                            <div className="flex items-center gap-1.5">
+                              {itemExpired ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 font-bold text-[11px] border border-rose-300 dark:border-rose-900 shadow-2xs">
+                                  <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+                                  <span>🔴 Expired: {summary.formattedDisplayDate}</span>
+                                </span>
+                              ) : itemExpiringSoon ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 font-bold text-[11px] border border-amber-300 dark:border-amber-900 shadow-2xs">
+                                  <Clock className="w-3 h-3 text-amber-600 animate-pulse shrink-0" />
+                                  <span>🟡 Within 30d: {summary.formattedDisplayDate} ({summary.minDaysRemaining}d)</span>
+                                </span>
+                              ) : itemFresh ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold text-[11px] border border-emerald-200 dark:border-emerald-800">
+                                  <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                                  <span>🟢 Fresh: {summary.formattedDisplayDate}</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 text-[11px]">
+                                  {summary.formattedDisplayDate}
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setQuickDateProduct(p);
+                                  setQuickDateValue(summary.formattedDisplayDate || p.expDate || '');
+                                }}
+                                className="p-1 hover:bg-indigo-50 dark:hover:bg-zinc-800 rounded text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
+                                title={language === 'bn' ? 'মেয়াদ তারিখ পরিবর্তন করুন' : 'Change Expiry Date'}
+                              >
+                                <Calendar className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           ) : (
-                            <span className="text-zinc-400 text-[11px]">N/A</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-zinc-400 text-[11px]">N/A</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setQuickDateProduct(p);
+                                  setQuickDateValue('');
+                                }}
+                                className="text-[10px] text-indigo-600 hover:underline ml-1 cursor-pointer font-semibold"
+                              >
+                                {language === 'bn' ? '+মেয়াদ দিন' : '+Add Exp'}
+                              </button>
+                            </div>
                           )}
                         </td>
 
@@ -1522,6 +1966,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
           )}
         </div>
       </div>
+      )}
       </>
       )}
 
@@ -1602,6 +2047,135 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
         }}
         products={products}
       />
+
+      {/* Quick Expiry Date Editor Modal */}
+      {quickDateProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-2xs p-3">
+          <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="font-bold text-sm text-zinc-900 dark:text-white">
+                  {language === 'bn' ? 'মেয়াদ তারিখ পরিবর্তন (Quick Update Expiry)' : 'Change Expiry Date'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQuickDateProduct(null)}
+                className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3">
+              <div className="bg-zinc-50 dark:bg-zinc-850 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                <div className="font-bold text-sm text-zinc-900 dark:text-white">{quickDateProduct.name}</div>
+                {quickDateProduct.nameBn && <div className="text-xs text-zinc-500">{quickDateProduct.nameBn}</div>}
+                <div className="text-xs text-zinc-500 font-mono mt-1">
+                  SKU: {quickDateProduct.sku} {quickDateProduct.batchNumber ? `• Batch: ${quickDateProduct.batchNumber}` : ''} • Stock: {quickDateProduct.stock} {quickDateProduct.unit}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                  {language === 'bn' ? 'নতুন মেয়াদ তারিখ নির্বাচন করুন:' : 'Select New Expiry Date:'}
+                </label>
+                <input
+                  type="date"
+                  value={quickDateValue}
+                  onChange={e => setQuickDateValue(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono"
+                />
+              </div>
+
+              {/* Quick Preset Buttons */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
+                  {language === 'bn' ? 'দ্রুত শর্টকাট প্রিসেট:' : 'Quick Presets:'}
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() - 5);
+                      setQuickDateValue(d.toISOString().split('T')[0]);
+                    }}
+                    className="px-2 py-1.5 text-[11px] font-bold rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 text-center cursor-pointer"
+                  >
+                    🔴 Expired (-5d)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 15);
+                      setQuickDateValue(d.toISOString().split('T')[0]);
+                    }}
+                    className="px-2 py-1.5 text-[11px] font-bold rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 text-center cursor-pointer"
+                  >
+                    🟡 Within 30d (+15d)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date();
+                      d.setMonth(d.getMonth() + 6);
+                      setQuickDateValue(d.toISOString().split('T')[0]);
+                    }}
+                    className="px-2 py-1.5 text-[11px] font-bold rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 text-center cursor-pointer"
+                  >
+                    🟢 Fresh (+6 Mo)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date();
+                      d.setFullYear(d.getFullYear() + 1);
+                      setQuickDateValue(d.toISOString().split('T')[0]);
+                    }}
+                    className="px-2 py-1.5 text-[11px] font-bold rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 text-center cursor-pointer"
+                  >
+                    🟢 Fresh (+1 Yr)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setQuickDateProduct(null)}
+                className="px-4 py-2 text-xs font-bold rounded-xl text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                {language === 'bn' ? 'বাতিল' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!quickDateValue) {
+                    showToast(language === 'bn' ? 'দয়া করে একটি তারিখ নির্বাচন করুন' : 'Please select a date', 'error');
+                    return;
+                  }
+                  updateProduct(quickDateProduct.id, { expDate: quickDateValue });
+                  showToast(
+                    language === 'bn'
+                      ? `"${quickDateProduct.name}"-এর মেয়াদ তারিখ সফলভাবে পরিবর্তন করা হয়েছে!`
+                      : `Expiry date for "${quickDateProduct.name}" updated successfully!`,
+                    'success'
+                  );
+                  setQuickDateProduct(null);
+                }}
+                className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>{language === 'bn' ? 'তারিখ আপডেট করুন' : 'Update Expiry Date'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

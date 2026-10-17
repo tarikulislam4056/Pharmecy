@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation } from '../../i18n/translations';
-import { Product, UnitType, WarrantyPeriodType, WarrantyType } from '../../types';
+import { Product, ProductBatch, UnitType, WarrantyPeriodType, WarrantyType } from '../../types';
 import { Package, X, Save, Calendar, Percent, Upload, Image as ImageIcon, Trash2, ShieldCheck, Tag, AlertCircle, RotateCcw } from 'lucide-react';
 
 interface ProductModalProps {
@@ -220,6 +220,45 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     const pPrice = parseFloat(purchasePrice) || 0;
     const sPrice = parseFloat(salesPrice) || 0;
 
+    let updatedBatches: ProductBatch[] | undefined = undefined;
+    const cleanExp = expDate.trim() || undefined;
+    const cleanBatch = batchNumber.trim() || undefined;
+
+    if (productToEdit?.batches && productToEdit.batches.length > 0) {
+      if (productToEdit.batches.length === 1) {
+        updatedBatches = [{
+          ...productToEdit.batches[0],
+          expDate: cleanExp,
+          batchNumber: cleanBatch || productToEdit.batches[0].batchNumber,
+          stock: parseInt(stock) || productToEdit.batches[0].stock,
+        }];
+      } else {
+        const targetIdx = cleanBatch
+          ? productToEdit.batches.findIndex(b => b.batchNumber === cleanBatch)
+          : -1;
+        if (targetIdx >= 0) {
+          updatedBatches = productToEdit.batches.map((b, idx) =>
+            idx === targetIdx ? { ...b, expDate: cleanExp } : b
+          );
+        } else {
+          updatedBatches = productToEdit.batches.map((b, idx) =>
+            idx === 0 ? { ...b, expDate: cleanExp } : b
+          );
+        }
+      }
+    } else if (cleanExp || cleanBatch) {
+      updatedBatches = [{
+        id: `batch-${Date.now()}`,
+        batchNumber: cleanBatch || 'B-01',
+        expDate: cleanExp,
+        stock: parseInt(stock) || 0,
+        initialStock: parseInt(stock) || 0,
+        purchaseDate: new Date().toISOString().split('T')[0],
+        purchasePrice: pPrice,
+        salesPrice: sPrice,
+      }];
+    }
+
     const payload = {
       name: name.trim(),
       nameBn: nameBn.trim() || name.trim(),
@@ -231,8 +270,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       salesPrice: sPrice,
       discount: parseFloat(discount) || 0,
       discountType,
-      expDate: expDate.trim() || undefined,
-      batchNumber: batchNumber.trim() || undefined,
+      expDate: cleanExp,
+      batchNumber: cleanBatch,
+      batches: updatedBatches,
       generic: isPharmacyMode ? (generic.trim() || undefined) : undefined,
       manufacturer: manufacturer.trim() || undefined,
       strength: isPharmacyMode ? (strength.trim() || undefined) : undefined,

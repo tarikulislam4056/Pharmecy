@@ -88,7 +88,7 @@ import {
   initialWarrantyClaims,
 } from '../data/mockInitialData';
 import { getFirstAllowedTab, isTabAllowed } from '../utils/permissions';
-import { isExpiredDate } from '../utils/dateUtils';
+import { isExpiredDate, normalizeDateToISO } from '../utils/dateUtils';
 import { getCachedClientDeviceInfo, fetchClientDeviceInfo, ClientDeviceInfo } from '../utils/clientDevice';
 
 export type PrintableDocumentType =
@@ -2646,9 +2646,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (p.id === id) {
           const catId = updates.categoryId || p.categoryId;
           const cat = categories.find(c => c.id === catId);
+
+          let nextBatches = updates.batches || p.batches;
+          if (updates.expDate !== undefined) {
+            const cleanExp = updates.expDate ? normalizeDateToISO(updates.expDate) || updates.expDate : '';
+            if (nextBatches && nextBatches.length > 0) {
+              if (nextBatches.length === 1) {
+                nextBatches = [{
+                  ...nextBatches[0],
+                  expDate: cleanExp,
+                  batchNumber: updates.batchNumber || nextBatches[0].batchNumber,
+                }];
+              } else {
+                const targetBatchNum = updates.batchNumber || p.batchNumber;
+                const matchIdx = targetBatchNum
+                  ? nextBatches.findIndex(b => b.batchNumber === targetBatchNum)
+                  : -1;
+                if (matchIdx >= 0) {
+                  nextBatches = nextBatches.map((b, idx) =>
+                    idx === matchIdx ? { ...b, expDate: cleanExp } : b
+                  );
+                } else {
+                  nextBatches = nextBatches.map((b, idx) =>
+                    idx === 0 ? { ...b, expDate: cleanExp } : b
+                  );
+                }
+              }
+            } else if (cleanExp) {
+              nextBatches = [{
+                id: `batch-${Date.now()}`,
+                batchNumber: updates.batchNumber || p.batchNumber || 'B-01',
+                expDate: cleanExp,
+                stock: updates.stock !== undefined ? updates.stock : p.stock,
+                initialStock: updates.stock !== undefined ? updates.stock : p.stock,
+                purchaseDate: new Date().toISOString().split('T')[0],
+                purchasePrice: updates.purchasePrice !== undefined ? updates.purchasePrice : p.purchasePrice,
+                salesPrice: updates.salesPrice !== undefined ? updates.salesPrice : p.salesPrice,
+              }];
+            }
+          }
+
           return {
             ...p,
             ...updates,
+            batches: nextBatches,
             categoryName: cat?.name || p.categoryName,
           };
         }

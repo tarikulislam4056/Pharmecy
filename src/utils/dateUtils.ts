@@ -143,68 +143,45 @@ export interface ProductExpirySummary {
  * and any batches in `p.batches`.
  */
 export function getProductExpirySummary(p: Product, withinDays: number = 30): ProductExpirySummary {
-  // If product has batches
-  if (p.batches && p.batches.length > 0) {
-    let hasExpired = false;
-    let hasExpiringSoon = false;
-    let hasFresh = false;
-    let hasAnyExpiry = false;
-    let expiredBatchesCount = 0;
-    let expiringSoonBatchesCount = 0;
-    let activeValidBatchesCount = 0;
-    let earliestExpDate: string | null = null;
-    let minDaysRemaining: number | null = null;
+  // Collect candidate expiry dates from both product batches and product-level expDate
+  const candidateDates: Array<{ dateISO: string; days: number; stock: number; batchNumber?: string }> = [];
 
+  if (p.batches && p.batches.length > 0) {
     for (const b of p.batches) {
-      const stock = Number(b.stock) || 0;
       const bExpISO = normalizeDateToISO(b.expDate || p.expDate);
       if (bExpISO) {
-        hasAnyExpiry = true;
         const days = getDaysRemaining(bExpISO);
-        if (days !== null && stock > 0) {
-          if (minDaysRemaining === null || days < minDaysRemaining) {
-            minDaysRemaining = days;
-            earliestExpDate = bExpISO;
-          }
-
-          if (days <= 0) {
-            hasExpired = true;
-            expiredBatchesCount++;
-          } else if (days <= withinDays) {
-            hasExpiringSoon = true;
-            expiringSoonBatchesCount++;
-            activeValidBatchesCount++;
-          } else {
-            hasFresh = true;
-            activeValidBatchesCount++;
-          }
+        if (days !== null) {
+          candidateDates.push({
+            dateISO: bExpISO,
+            days,
+            stock: Number(b.stock) || 0,
+            batchNumber: b.batchNumber,
+          });
         }
       }
     }
-
-    let displayStatus: 'EXPIRED' | 'EXPIRING_SOON' | 'FRESH' | 'NO_EXPIRY' = 'NO_EXPIRY';
-    if (hasExpired) displayStatus = 'EXPIRED';
-    else if (hasExpiringSoon) displayStatus = 'EXPIRING_SOON';
-    else if (hasFresh) displayStatus = 'FRESH';
-
-    return {
-      hasExpired,
-      hasExpiringSoon,
-      hasFresh,
-      hasAnyExpiry,
-      expiredBatchesCount,
-      expiringSoonBatchesCount,
-      activeValidBatchesCount,
-      earliestExpDate,
-      minDaysRemaining,
-      displayStatus,
-      formattedDisplayDate: earliestExpDate || normalizeDateToISO(p.expDate) || '',
-    };
   }
 
-  // Simple product without batches
+  // Also include product-level expDate
   const pExpISO = normalizeDateToISO(p.expDate);
-  if (!pExpISO) {
+  if (pExpISO) {
+    const days = getDaysRemaining(pExpISO);
+    if (days !== null) {
+      const alreadyHas = candidateDates.some(c => c.dateISO === pExpISO);
+      if (!alreadyHas) {
+        candidateDates.push({
+          dateISO: pExpISO,
+          days,
+          stock: Number(p.stock) || 0,
+          batchNumber: p.batchNumber,
+        });
+      }
+    }
+  }
+
+  // If no valid expiry date found anywhere
+  if (candidateDates.length === 0) {
     return {
       hasExpired: false,
       hasExpiringSoon: false,
@@ -212,7 +189,7 @@ export function getProductExpirySummary(p: Product, withinDays: number = 30): Pr
       hasAnyExpiry: false,
       expiredBatchesCount: 0,
       expiringSoonBatchesCount: 0,
-      activeValidBatchesCount: 1, // Changed from p.stock > 0 ? 1 : 0
+      activeValidBatchesCount: 0,
       earliestExpDate: null,
       minDaysRemaining: null,
       displayStatus: 'NO_EXPIRY',
@@ -220,23 +197,58 @@ export function getProductExpirySummary(p: Product, withinDays: number = 30): Pr
     };
   }
 
-  const days = getDaysRemaining(pExpISO);
-  const isExp = days !== null && days <= 0;
-  const isSoon = days !== null && days > 0 && days <= withinDays;
-  const isFr = days !== null && days > withinDays;
+  // If some candidate dates have positive stock, prioritize active in-stock dates;
+  // otherwise evaluate across all candidate dates
+  const inStockCandidates = candidateDates.filter(c => c.stock > 0);
+  const activeCandidates = inStockCandidates.length > 0 ? inStockCandidates : candidateDates;
+
+  // Sort active candidates by earliest days remaining (most urgent first)
+  activeCandidates.sort((a, b) => a.days - b.days);
+
+  const mostUrgent = activeCandidates[0];
+  const earliestExpDate = mostUrgent.dateISO;
+  const minDaysRemaining = mostUrgent.days;
+
+  let expiredBatchesCount = 0;
+  let expiringSoonBatchesCount = 0;
+  let activeValidBatchesCount = 0;
+
+  for (const c of activeCandidates) {
+    if (c.days <= 0) {
+      expiredBatchesCount++;
+    } else if (c.days <= withinDays) {
+      expiringSoonBatchesCount++;
+      activeValidBatchesCount++;
+    } else {
+      activeValidBatchesCount++;
+    }
+  }
+
+  // Determine mutual status categories:
+  // 🔴 Expired: minDaysRemaining <= 0
+  // 🟡 Within 30 Days: 0 < minDaysRemaining <= withinDays
+  // 🟢 Fresh / Valid: minDaysRemaining > withinDays
+  const hasExpired = minDaysRemaining !== null && minDaysRemaining <= 0;
+  const hasExpiringSoon = minDaysRemaining !== null && minDaysRemaining > 0 && minDaysRemaining <= withinDays;
+  const hasFresh = minDaysRemaining !== null && minDaysRemaining > withinDays;
+
+  let displayStatus: 'EXPIRED' | 'EXPIRING_SOON' | 'FRESH' | 'NO_EXPIRY' = 'NO_EXPIRY';
+  if (hasExpired) displayStatus = 'EXPIRED';
+  else if (hasExpiringSoon) displayStatus = 'EXPIRING_SOON';
+  else if (hasFresh) displayStatus = 'FRESH';
 
   return {
-    hasExpired: isExp, // Changed from isExp && p.stock > 0
-    hasExpiringSoon: isSoon, // Changed from isSoon && p.stock > 0
-    hasFresh: isFr, // Changed from isFr && p.stock > 0
+    hasExpired,
+    hasExpiringSoon,
+    hasFresh,
     hasAnyExpiry: true,
-    expiredBatchesCount: isExp ? 1 : 0, // Changed
-    expiringSoonBatchesCount: isSoon ? 1 : 0, // Changed
-    activeValidBatchesCount: !isExp ? 1 : 0, // Changed
-    earliestExpDate: pExpISO,
-    minDaysRemaining: days,
-    displayStatus: isExp ? 'EXPIRED' : isSoon ? 'EXPIRING_SOON' : isFr ? 'FRESH' : 'NO_EXPIRY', // Changed
-    formattedDisplayDate: pExpISO,
+    expiredBatchesCount,
+    expiringSoonBatchesCount,
+    activeValidBatchesCount,
+    earliestExpDate,
+    minDaysRemaining,
+    displayStatus,
+    formattedDisplayDate: earliestExpDate,
   };
 }
 
