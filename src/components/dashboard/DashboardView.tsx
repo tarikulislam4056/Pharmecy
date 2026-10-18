@@ -133,6 +133,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [dashboardSearchQuery, setDashboardSearchQuery] = useState('');
   const [isVoucherSearchOpen, setIsVoucherSearchOpen] = useState(false);
   const [isExpiryModalOpen, setIsExpiryModalOpen] = useState(false);
+  const [showPurchaseSales, setShowPurchaseSales] = useState(false);
 
   // Products expiring within 5 days (User requirement: 5 days prior alert in admin panel)
   const expiring5DaysItems = useMemo(() => {
@@ -742,6 +743,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-1.5 py-0.2 rounded border border-indigo-100 dark:border-indigo-800/50">
                 {totalStockQty.toLocaleString()} {language === 'bn' ? 'টি পিস' : 'Units'}
               </span>
+            </div>
+            
+            {/* New Button to Toggle Purchase/Sales Details */}
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => setShowPurchaseSales(!showPurchaseSales)}
+                className="w-full py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
+              >
+                 {showPurchaseSales ? (language === 'bn' ? 'তথ্য লুকাও' : 'Hide Details') : (language === 'bn' ? 'ক্রয় ও বিক্রয় দেখুন' : 'View Purchase & Sales')}
+              </button>
+
+              {showPurchaseSales && (
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] animate-in fade-in slide-in-from-top-1">
+                  <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded border border-slate-100 dark:border-slate-700">
+                    <span className="text-slate-500 block">{language === 'bn' ? 'মোট ক্রয়' : 'Total Purchase'}</span>
+                    <span className="font-bold font-mono text-slate-800 dark:text-slate-200">
+                       {formatCurrency(purchaseInvoices.reduce((sum, p) => sum + (p.total || 0), 0))}
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded border border-slate-100 dark:border-slate-700">
+                    <span className="text-slate-500 block">{language === 'bn' ? 'মোট বিক্রয়' : 'Total Sales'}</span>
+                    <span className="font-bold font-mono text-slate-800 dark:text-slate-200">
+                       {formatCurrency(saleInvoices.reduce((sum, s) => sum + (s.total || 0), 0))}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

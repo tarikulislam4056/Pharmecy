@@ -233,18 +233,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           stock: parseInt(stock) || productToEdit.batches[0].stock,
         }];
       } else {
-        const targetIdx = cleanBatch
-          ? productToEdit.batches.findIndex(b => b.batchNumber === cleanBatch)
-          : -1;
-        if (targetIdx >= 0) {
-          updatedBatches = productToEdit.batches.map((b, idx) =>
-            idx === targetIdx ? { ...b, expDate: cleanExp } : b
-          );
-        } else {
-          updatedBatches = productToEdit.batches.map((b, idx) =>
-            idx === 0 ? { ...b, expDate: cleanExp } : b
-          );
-        }
+        // When user updates expiry date at product level, synchronize all batches with the new expiry date
+        updatedBatches = productToEdit.batches.map((b, idx) => ({
+          ...b,
+          expDate: cleanExp,
+          batchNumber: (cleanBatch && idx === 0) ? cleanBatch : b.batchNumber,
+        }));
       }
     } else if (cleanExp || cleanBatch) {
       updatedBatches = [{

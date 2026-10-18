@@ -3378,23 +3378,27 @@ export const PrintInvoiceModal: React.FC = () => {
                   </div>
 
                   {/* Products Table */}
-                  <table className="w-full text-left border-collapse text-xs mb-6">
+                  <table className="w-full text-left border-collapse text-[8px] mb-6 table-fixed break-words">
                     <thead>
                       <tr
                         className="font-semibold"
                         style={{ backgroundColor: invoiceTheme.primary, color: invoiceTheme.textColor }}
                       >
-                        <th className="py-2 px-2 text-center w-8 font-medium">#</th>
-                        <th className="py-2 px-2 font-medium">Item Name & SKU</th>
-                        <th className="py-2 px-2 font-medium">Generic</th>
-                        <th className="py-2 px-2 font-medium">Brand / Manufacturer</th>
-                        <th className="py-2 px-2 font-medium">Category</th>
-                        <th className="py-2 px-2 font-mono font-medium">Barcode</th>
-                        <th className="py-2 px-2 font-mono font-medium">Exp Date</th>
-                        <th className="py-2 px-2 text-right font-medium">Cost Price</th>
-                        <th className="py-2 px-2 text-right font-medium">Sales Price</th>
-                        <th className="py-2 px-2 text-center font-medium">Stock</th>
-                        <th className="py-2 px-2 text-right font-medium">Valuation (Cost)</th>
+                        <th className="py-1 px-0.5 text-center w-5 font-medium">#</th>
+                        <th className="py-1 px-0.5 font-medium w-20">Name & SKU</th>
+                        <th className="py-1 px-0.5 font-medium w-12">Generic</th>
+                        <th className="py-1 px-0.5 font-medium w-16">Brand</th>
+                        <th className="py-1 px-0.5 font-medium w-12">Strength</th>
+                        <th className="py-1 px-0.5 font-medium w-12">Dosage</th>
+                        <th className="py-1 px-0.5 font-medium w-12">Cat.</th>
+                        <th className="py-1 px-0.5 font-medium w-10">Rack</th>
+                        <th className="py-1 px-0.5 font-mono font-medium w-14">Barcode</th>
+                        <th className="py-1 px-0.5 font-mono font-medium w-12">Batch</th>
+                        <th className="py-1 px-0.5 font-mono font-medium w-12">Exp</th>
+                        <th className="py-1 px-0.5 text-right font-medium w-10">Cost</th>
+                        <th className="py-1 px-0.5 text-right font-medium w-10">Sales</th>
+                        <th className="py-1 px-0.5 text-center font-medium w-8">Stock</th>
+                        <th className="py-1 px-0.5 text-right font-medium w-12">Asset</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-200">
@@ -3408,24 +3412,28 @@ export const PrintInvoiceModal: React.FC = () => {
 
                           return (
                             <tr key={p.id || idx} className="hover:bg-zinc-50">
-                              <td className="py-1.5 px-2 text-center text-zinc-600 font-mono">{idx + 1}</td>
-                              <td className="py-1.5 px-2 font-medium text-black">
+                              <td className="py-1 px-0.5 text-center text-zinc-600 font-mono">{idx + 1}</td>
+                              <td className="py-1 px-0.5 font-medium text-black">
                                 <div>{p.name}</div>
-                                {p.sku && <div className="text-[10px] text-zinc-500 font-mono">SKU: {p.sku}</div>}
+                                {p.sku && <div className="text-[7px] text-zinc-500 font-mono">SKU: {p.sku}</div>}
                               </td>
-                              <td className="py-1.5 px-2 text-zinc-700 font-medium text-[11px]">{p.generic || '—'}</td>
-                              <td className="py-1.5 px-2 text-zinc-700 font-medium text-[11px]">{p.manufacturer || '—'}</td>
-                              <td className="py-1.5 px-2 text-zinc-700 font-semibold text-[11px]">{p.categoryName || p.category || '—'}</td>
-                              <td className="py-1.5 px-2 font-mono text-zinc-600 text-[11px]">{p.barcode || '-'}</td>
-                              <td className="py-1.5 px-2 font-mono text-zinc-600 text-[11px]">{p.expDate || '-'}</td>
-                              <td className="py-1.5 px-2 text-right font-mono">৳{cost.toLocaleString()}</td>
-                              <td className="py-1.5 px-2 text-right font-mono font-bold">৳{sale.toLocaleString()}</td>
-                              <td className="py-1.5 px-2 text-center font-mono font-bold">
+                              <td className="py-1 px-0.5 text-zinc-700 text-[8px]">{p.generic || '—'}</td>
+                              <td className="py-1 px-0.5 text-zinc-700 text-[8px]">{p.manufacturer || '—'}</td>
+                              <td className="py-1 px-0.5 text-zinc-700 text-[8px]">{p.strength || '—'}</td>
+                              <td className="py-1 px-0.5 text-zinc-700 text-[8px]">{p.dosageForm || '—'}</td>
+                              <td className="py-1 px-0.5 text-zinc-700 text-[8px]">{p.categoryName || p.category || '—'}</td>
+                              <td className="py-1 px-0.5 text-zinc-700 text-[8px]">{p.rackLocation || '—'}</td>
+                              <td className="py-1 px-0.5 font-mono text-zinc-600 text-[8px]">{p.barcode || '-'}</td>
+                              <td className="py-1 px-0.5 font-mono text-zinc-600 text-[8px]">{p.batchNumber || '-'}</td>
+                              <td className="py-1 px-0.5 font-mono text-zinc-600 text-[8px]">{p.expDate || '-'}</td>
+                              <td className="py-1 px-0.5 text-right font-mono text-[8px]">৳{cost.toLocaleString()}</td>
+                              <td className="py-1 px-0.5 text-right font-mono font-bold text-[8px]">৳{sale.toLocaleString()}</td>
+                              <td className="py-1 px-0.5 text-center font-mono font-bold text-[8px]">
                                 <span className={stock <= 0 ? 'text-rose-600' : isLow ? 'text-amber-600' : 'text-black'}>
-                                  {stock} {p.unit || 'pcs'}
+                                  {stock}
                                 </span>
                               </td>
-                              <td className="py-1.5 px-2 text-right font-mono font-medium">৳{val.toLocaleString()}</td>
+                              <td className="py-1 px-0.5 text-right font-mono font-medium text-[8px]">৳{val.toLocaleString()}</td>
                             </tr>
                           );
                         })
@@ -3437,7 +3445,7 @@ export const PrintInvoiceModal: React.FC = () => {
                     </tbody>
                     <tfoot>
                       <tr className="border-t-2 border-zinc-900 font-bold text-black" style={{ backgroundColor: '#f4f4f5' }}>
-                        <td colSpan={7} className="py-2.5 px-3 text-right">TOTAL INVENTORY SUMMARY:</td>
+                        <td colSpan={9} className="py-2.5 px-3 text-right">TOTAL INVENTORY SUMMARY:</td>
                         <td className="py-2.5 px-2 text-center font-mono">{data.totalUnits?.toLocaleString() || 0}</td>
                         <td colSpan={2}></td>
                         <td className="py-2.5 px-2 text-right font-mono text-emerald-800">৳ {Number(data.totalCostValue || 0).toLocaleString()}</td>

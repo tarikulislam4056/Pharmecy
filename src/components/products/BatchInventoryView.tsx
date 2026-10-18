@@ -234,11 +234,10 @@ export const BatchInventoryView: React.FC = () => {
     return Array.from(set).sort();
   }, [allBatchItems]);
 
-  // Filtered Items
-  const filteredItems = useMemo(() => {
+  // Base items filtered by search, stock, category, generic (ignoring statusFilter) for accurate metrics counts
+  const baseFilteredItems = useMemo(() => {
     let result = [...allBatchItems];
 
-    // Search query - Multi-term, bilingual digits, batch formatting & field-spanning
     if (searchQuery.trim()) {
       const rawQuery = searchQuery.trim().toLowerCase();
       const enQuery = bnToEnDigits(rawQuery);
@@ -286,7 +285,6 @@ export const BatchInventoryView: React.FC = () => {
           const enTerm = enQueryTerms[idx] || term;
           const cleanTerm = term.replace(/[^a-z0-9]/gi, '');
 
-          // If the user literally typed "batch" or "#", it's an intentional match for batch context
           if (term === 'batch' || term === '#') return true;
 
           return (
@@ -297,15 +295,6 @@ export const BatchInventoryView: React.FC = () => {
           );
         });
       });
-    }
-
-    // Shelf life status
-    if (statusFilter === 'EXPIRING_30_DAYS' || statusFilter === 'EXPIRING_30') {
-      result = result.filter(
-        (i) => i.daysRemaining !== null && i.daysRemaining >= 0 && i.daysRemaining <= 30 && i.stock > 0
-      );
-    } else if (statusFilter !== 'ALL') {
-      result = result.filter((i) => i.shelfLifeStatus === statusFilter);
     }
 
     // Stock availability
@@ -326,6 +315,86 @@ export const BatchInventoryView: React.FC = () => {
     // Generic
     if (selectedGeneric !== 'ALL') {
       result = result.filter((i) => i.generic?.trim().toLowerCase() === selectedGeneric.trim().toLowerCase());
+    }
+
+    return result;
+  }, [allBatchItems, searchQuery, stockFilter, selectedCategory, selectedGeneric, categories]);
+
+  // Summary Metrics computed from inventory (ignoring stock filter, honoring search, category, generic)
+  const metrics = useMemo(() => {
+    // Let's simplify: Just use allBatchItems and filter by category/generic
+    const itemsForMetrics = allBatchItems.filter((i) => {
+        // Category
+        if (selectedCategory !== 'ALL') {
+          const catObj = categories.find((c) => c.id === selectedCategory);
+          if (catObj && i.categoryName !== catObj.name) return false;
+        }
+        // Generic
+        if (selectedGeneric !== 'ALL') {
+          if (i.generic?.trim().toLowerCase() !== selectedGeneric.trim().toLowerCase()) return false;
+        }
+        return true;
+    });
+
+    const totalActiveBatches = itemsForMetrics.filter((i) => i.stock > 0).length;
+    const totalBatchItemsCount = itemsForMetrics.length;
+    const totalUnits = itemsForMetrics.reduce((sum, i) => sum + Math.max(0, i.stock), 0);
+    const totalCostValuation = itemsForMetrics.reduce((sum, i) => sum + Math.max(0, i.stock) * i.purchasePrice, 0);
+    const totalRetailValuation = itemsForMetrics.reduce((sum, i) => sum + Math.max(0, i.stock) * i.salesPrice, 0);
+
+    const expiredItems = itemsForMetrics.filter((i) => i.shelfLifeStatus === 'EXPIRED');
+    const expiredCount = expiredItems.length;
+    const expiredValuation = expiredItems.reduce((sum, i) => sum + Math.max(0, i.stock) * i.purchasePrice, 0);
+
+    const criticalItems = itemsForMetrics.filter((i) => i.shelfLifeStatus === 'CRITICAL');
+    const criticalCount = criticalItems.length;
+    const criticalValuation = criticalItems.reduce((sum, i) => sum + Math.max(0, i.stock) * i.purchasePrice, 0);
+
+    const warningItems = itemsForMetrics.filter((i) => i.shelfLifeStatus === 'WARNING');
+    const warningCount = warningItems.length;
+    const warningValuation = warningItems.reduce((sum, i) => sum + Math.max(0, i.stock) * i.purchasePrice, 0);
+
+    const healthyItems = itemsForMetrics.filter((i) => i.shelfLifeStatus === 'GOOD');
+    const healthyCount = healthyItems.length;
+
+    // Items expiring specifically within 30 days (0 <= daysRemaining <= 30)
+    const expiring30DaysItems = itemsForMetrics.filter(
+      (i) => i.daysRemaining !== null && i.daysRemaining >= 0 && i.daysRemaining <= 30
+    );
+    const expiring30DaysCount = expiring30DaysItems.length;
+    const expiring30DaysValuation = expiring30DaysItems.reduce((sum, i) => sum + i.stock * i.purchasePrice, 0);
+    const expiring30DaysUnits = expiring30DaysItems.reduce((sum, i) => sum + i.stock, 0);
+
+    return {
+      totalActiveBatches,
+      totalBatchItemsCount,
+      totalUnits,
+      totalCostValuation,
+      totalRetailValuation,
+      expiredCount,
+      expiredValuation,
+      criticalCount,
+      criticalValuation,
+      warningCount,
+      warningValuation,
+      healthyCount,
+      expiring30DaysCount,
+      expiring30DaysValuation,
+      expiring30DaysUnits,
+    };
+  }, [allBatchItems, selectedCategory, selectedGeneric, categories]);
+
+  // Filtered Items (applying statusFilter and sorting)
+  const filteredItems = useMemo(() => {
+    let result = [...baseFilteredItems];
+
+    // Shelf life status filter
+    if (statusFilter === 'EXPIRING_30_DAYS' || statusFilter === 'EXPIRING_30') {
+      result = result.filter(
+        (i) => i.daysRemaining !== null && i.daysRemaining >= 0 && i.daysRemaining <= 30 && i.stock > 0
+      );
+    } else if (statusFilter !== 'ALL') {
+      result = result.filter((i) => i.shelfLifeStatus === statusFilter);
     }
 
     // Sorting
@@ -357,16 +426,7 @@ export const BatchInventoryView: React.FC = () => {
     });
 
     return result;
-  }, [
-    allBatchItems,
-    searchQuery,
-    statusFilter,
-    stockFilter,
-    selectedCategory,
-    selectedGeneric,
-    sortBy,
-    categories,
-  ]);
+  }, [baseFilteredItems, statusFilter, sortBy]);
 
   // Grouped by Batch Number
   const groupedByBatchNumber = useMemo(() => {
@@ -398,56 +458,6 @@ export const BatchInventoryView: React.FC = () => {
       };
     });
   }, [filteredItems]);
-
-  // Summary Metrics
-  const metrics = useMemo(() => {
-    const totalActiveBatches = groupedByBatchNumber.filter((g) => g.totalStock > 0).length;
-    const totalBatchItemsCount = filteredItems.length;
-    const totalUnits = filteredItems.reduce((sum, i) => sum + Math.max(0, i.stock), 0);
-    const totalCostValuation = filteredItems.reduce((sum, i) => sum + Math.max(0, i.stock) * i.purchasePrice, 0);
-    const totalRetailValuation = filteredItems.reduce((sum, i) => sum + Math.max(0, i.stock) * i.salesPrice, 0);
-
-    const expiredItems = filteredItems.filter((i) => i.shelfLifeStatus === 'EXPIRED' && i.stock > 0);
-    const expiredCount = expiredItems.length;
-    const expiredValuation = expiredItems.reduce((sum, i) => sum + i.stock * i.purchasePrice, 0);
-
-    const criticalItems = filteredItems.filter((i) => i.shelfLifeStatus === 'CRITICAL' && i.stock > 0);
-    const criticalCount = criticalItems.length;
-    const criticalValuation = criticalItems.reduce((sum, i) => sum + i.stock * i.purchasePrice, 0);
-
-    const warningItems = filteredItems.filter((i) => i.shelfLifeStatus === 'WARNING' && i.stock > 0);
-    const warningCount = warningItems.length;
-    const warningValuation = warningItems.reduce((sum, i) => sum + i.stock * i.purchasePrice, 0);
-
-    const healthyItems = filteredItems.filter((i) => i.shelfLifeStatus === 'GOOD' && i.stock > 0);
-    const healthyCount = healthyItems.length;
-
-    // Items expiring specifically within 30 days (0 <= daysRemaining <= 30) across all active stock
-    const expiring30DaysItems = allBatchItems.filter(
-      (i) => i.stock > 0 && i.daysRemaining !== null && i.daysRemaining >= 0 && i.daysRemaining <= 30
-    );
-    const expiring30DaysCount = expiring30DaysItems.length;
-    const expiring30DaysValuation = expiring30DaysItems.reduce((sum, i) => sum + i.stock * i.purchasePrice, 0);
-    const expiring30DaysUnits = expiring30DaysItems.reduce((sum, i) => sum + i.stock, 0);
-
-    return {
-      totalActiveBatches,
-      totalBatchItemsCount,
-      totalUnits,
-      totalCostValuation,
-      totalRetailValuation,
-      expiredCount,
-      expiredValuation,
-      criticalCount,
-      criticalValuation,
-      warningCount,
-      warningValuation,
-      healthyCount,
-      expiring30DaysCount,
-      expiring30DaysValuation,
-      expiring30DaysUnits,
-    };
-  }, [groupedByBatchNumber, filteredItems, allBatchItems]);
 
   const toggleBatchExpand = (bNo: string) => {
     setExpandedBatches((prev) => ({ ...prev, [bNo]: !prev[bNo] }));

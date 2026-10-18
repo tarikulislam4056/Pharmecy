@@ -143,12 +143,12 @@ export interface ProductExpirySummary {
  * and any batches in `p.batches`.
  */
 export function getProductExpirySummary(p: Product, withinDays: number = 30): ProductExpirySummary {
-  // Collect candidate expiry dates from both product batches and product-level expDate
+  const pExpISO = normalizeDateToISO(p.expDate);
   const candidateDates: Array<{ dateISO: string; days: number; stock: number; batchNumber?: string }> = [];
 
   if (p.batches && p.batches.length > 0) {
     for (const b of p.batches) {
-      const bExpISO = normalizeDateToISO(b.expDate || p.expDate);
+      const bExpISO = normalizeDateToISO(b.expDate) || pExpISO;
       if (bExpISO) {
         const days = getDaysRemaining(bExpISO);
         if (days !== null) {
@@ -163,20 +163,16 @@ export function getProductExpirySummary(p: Product, withinDays: number = 30): Pr
     }
   }
 
-  // Also include product-level expDate
-  const pExpISO = normalizeDateToISO(p.expDate);
-  if (pExpISO) {
+  // If no candidate dates from batches, evaluate product-level expDate
+  if (candidateDates.length === 0 && pExpISO) {
     const days = getDaysRemaining(pExpISO);
     if (days !== null) {
-      const alreadyHas = candidateDates.some(c => c.dateISO === pExpISO);
-      if (!alreadyHas) {
-        candidateDates.push({
-          dateISO: pExpISO,
-          days,
-          stock: Number(p.stock) || 0,
-          batchNumber: p.batchNumber,
-        });
-      }
+      candidateDates.push({
+        dateISO: pExpISO,
+        days,
+        stock: Number(p.stock) || 0,
+        batchNumber: p.batchNumber,
+      });
     }
   }
 

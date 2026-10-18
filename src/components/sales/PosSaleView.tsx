@@ -57,6 +57,8 @@ interface SaleRowItem {
   batchId?: string;
   batchNumber?: string;
   expDate?: string;
+  strength?: string;
+  manufacturer?: string;
 }
 
 interface SplitPaymentRow {
@@ -582,6 +584,8 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
           batchId: firstValidBatch?.id,
           batchNumber: firstValidBatch?.batchNumber || product.batchNumber,
           expDate: firstValidBatch?.expDate || product.expDate,
+          strength: product.strength,
+          manufacturer: product.manufacturer,
         };
       });
 
@@ -784,6 +788,8 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
           batchId: firstValidBatch?.id,
           batchNumber: firstValidBatch?.batchNumber || product.batchNumber,
           expDate: firstValidBatch?.expDate || product.expDate,
+          strength: product.strength,
+          manufacturer: product.manufacturer,
         },
       ]);
     }
@@ -1780,7 +1786,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
                   <th className="py-2.5 px-3 w-28 text-right">Price</th>
                   <th className="py-2.5 px-3 w-24 text-right">Discount</th>
                   <th className="py-2.5 px-3 w-28 text-right">Net Amount</th>
-                  <th className="py-2.5 px-2 w-10 text-center"></th>
+                  <th className="py-2.5 px-2 w-16 text-right">Actions</th>
                 </tr>
               </thead>
 
@@ -1813,6 +1819,10 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
                             placeholder="Search product / Scan Product Code"
                             className="w-full pl-3 pr-10 py-1.5 bg-[#FAF9FE] dark:bg-slate-800 border border-[#DCD6FE] dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-[#8A7CFA] focus:bg-white"
                           />
+                          <div className="absolute left-3 top-full mt-0.5 flex flex-col gap-0">
+                            {row.strength && <span className="text-[9px] text-slate-500">{row.strength}</span>}
+                            {row.manufacturer && <span className="text-[9px] text-slate-500">{row.manufacturer}</span>}
+                          </div>
                           
                           {/* Barcode icon / scan button inside input */}
                           <button
@@ -1955,6 +1965,8 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
                                     <div>
                                       <div className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5 flex-wrap">
                                         <span>{prod.name}</span>
+                                  {prod.strength && <span className="text-slate-500 text-[10px] font-normal">| {prod.strength}</span>}
+                                  {prod.manufacturer && <span className="text-slate-500 text-[10px] font-normal">| {prod.manufacturer}</span>}
                                         {expired && (
                                           <span className="px-1.5 py-0.2 bg-rose-600 text-white font-mono text-[9px] font-bold rounded">
                                             🔴 {language === 'bn' ? 'মেয়াদ শেষ (বিক্রয় নিষিদ্ধ)' : 'Expired'}
@@ -2064,7 +2076,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
                       </td>
 
                       {/* Delete Action */}
-                      <td className="py-2 px-2 text-center">
+                      <td className="py-2 px-2 text-right">
                         <button
                           type="button"
                           onClick={() => handleRemoveRow(row.id)}

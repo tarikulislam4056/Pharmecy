@@ -74,7 +74,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
   // Active View Tab
   const [activeTab, setActiveTab] = useState<'all' | 'batch-inventory' | 'expiry' | 'low-stock' | 'return-logs' | 'write-off-logs' | 'replace-logs'>('all');
   const [expirySubFilter, setExpirySubFilter] = useState<'expired' | 'expiring-soon' | 'fresh' | 'all-dated'>('expired');
-  const [expiryViewMode, setExpiryViewMode] = useState<'columns' | 'table'>('columns');
+  const [expiryViewMode, setExpiryViewMode] = useState<'columns' | 'table'>('table');
   const [quickDateProduct, setQuickDateProduct] = useState<Product | null>(null);
   const [quickDateValue, setQuickDateValue] = useState<string>('');
 
@@ -952,7 +952,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="p-3.5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-2xs">
             <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
               {language === 'bn' ? 'ফিল্টারকৃত পণ্য সংখ্যা:' : 'Filtered Products:'}
@@ -986,18 +986,6 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
             </div>
             <div className="text-[10px] text-sky-500/80 mt-1">
               {language === 'bn' ? 'বিক্রয় মূল্যের ভিত্তিতে সম্ভাব্য আয়' : 'Estimated revenue on sales rate'}
-            </div>
-          </div>
-
-          <div className="p-3.5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-2xs">
-            <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
-              {language === 'bn' ? 'প্রাক্কলিত মোট মুনাফা (Margin):' : 'Estimated Potential Margin:'}
-            </div>
-            <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono mt-0.5">
-              {formatCurrency(totalEstimatedMargin)}
-            </div>
-            <div className="text-[10px] text-indigo-500/80 mt-1 font-mono">
-              {marginPercentage}% {language === 'bn' ? 'গড় মার্জিন হার' : 'avg gross margin'}
             </div>
           </div>
         </div>
@@ -1205,9 +1193,10 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
 
       {/* 6. Either 3 Columns Kanban Board (when expiry tab & columns mode) OR Products Table */}
       {activeTab === 'expiry' && expiryViewMode === 'columns' ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Column 1: 🔴 Expired */}
-          <div className="bg-rose-50/40 dark:bg-rose-950/20 rounded-2xl border-2 border-rose-200 dark:border-rose-900/50 p-3.5 flex flex-col min-h-[520px]">
+        <div className="space-y-6">
+          {/* Section 1: 🔴 Expired */}
+          {(expirySubFilter === 'expired' || expirySubFilter === 'all-dated') && (
+          <div className="bg-rose-50/40 dark:bg-rose-950/20 rounded-2xl border-2 border-rose-200 dark:border-rose-900/50 p-4">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-rose-200 dark:border-rose-900/50">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
@@ -1225,19 +1214,19 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
               </span>
             </div>
 
-            <div className="space-y-3 flex-1 overflow-y-auto max-h-[750px] pr-1">
-              {filteredExpiredProducts.length === 0 ? (
-                <div className="h-48 flex flex-col items-center justify-center text-center p-4 text-zinc-400">
-                  <ShieldCheck className="w-10 h-10 text-rose-300 dark:text-rose-800 mb-2" />
-                  <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
-                    {language === 'bn' ? 'কোনো মেয়াদোত্তীর্ণ পণ্য নেই!' : 'No expired items!'}
-                  </p>
-                  <p className="text-[10px] text-zinc-400 mt-0.5">
-                    {language === 'bn' ? 'সব পণ্য নিরাপদ ও বৈধ মেয়াদে রয়েছে' : 'All items have valid shelf life'}
-                  </p>
-                </div>
-              ) : (
-                filteredExpiredProducts.map(p => {
+            {filteredExpiredProducts.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center p-4 text-zinc-400">
+                <ShieldCheck className="w-10 h-10 text-rose-300 dark:text-rose-800 mb-2" />
+                <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                  {language === 'bn' ? 'কোনো মেয়াদোত্তীর্ণ পণ্য নেই!' : 'No expired items!'}
+                </p>
+                <p className="text-[10px] text-zinc-400 mt-0.5">
+                  {language === 'bn' ? 'সব পণ্য নিরাপদ ও বৈধ মেয়াদে রয়েছে' : 'All items have valid shelf life'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredExpiredProducts.map(p => {
                   const summary = productExpirySummaries.get(p.id) || getProductExpirySummary(p, 30);
                   return (
                     <div
@@ -1304,13 +1293,15 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                       </div>
                     </div>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </div>
+          )}
 
-          {/* Column 2: 🟡 Within 30 Days */}
-          <div className="bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl border-2 border-amber-200 dark:border-amber-900/50 p-3.5 flex flex-col min-h-[520px]">
+          {/* Section 2: 🟡 Within 30 Days */}
+          {(expirySubFilter === 'expiring-soon' || expirySubFilter === 'all-dated') && (
+          <div className="bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl border-2 border-amber-200 dark:border-amber-900/50 p-4">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-amber-200 dark:border-amber-900/50">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
@@ -1328,19 +1319,19 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
               </span>
             </div>
 
-            <div className="space-y-3 flex-1 overflow-y-auto max-h-[750px] pr-1">
-              {filteredExpiringSoonProducts.length === 0 ? (
-                <div className="h-48 flex flex-col items-center justify-center text-center p-4 text-zinc-400">
-                  <Clock className="w-10 h-10 text-amber-300 dark:text-amber-800 mb-2" />
-                  <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
-                    {language === 'bn' ? '৩০ দিনের মধ্যে কোনো পণ্য মেয়াদোত্তীর্ণ হচ্ছে না!' : 'No items expiring soon!'}
-                  </p>
-                  <p className="text-[10px] text-zinc-400 mt-0.5">
-                    {language === 'bn' ? 'সব স্টক পর্যাপ্ত মেয়াদযুক্ত' : 'Safe stock expiry buffer'}
-                  </p>
-                </div>
-              ) : (
-                filteredExpiringSoonProducts.map(p => {
+            {filteredExpiringSoonProducts.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center p-4 text-zinc-400">
+                <Clock className="w-10 h-10 text-amber-300 dark:text-amber-800 mb-2" />
+                <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                  {language === 'bn' ? '৩০ দিনের মধ্যে কোনো পণ্য মেয়াদোত্তীর্ণ হচ্ছে না!' : 'No items expiring soon!'}
+                </p>
+                <p className="text-[10px] text-zinc-400 mt-0.5">
+                  {language === 'bn' ? 'সব স্টক পর্যাপ্ত মেয়াদযুক্ত' : 'Safe stock expiry buffer'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredExpiringSoonProducts.map(p => {
                   const summary = productExpirySummaries.get(p.id) || getProductExpirySummary(p, 30);
                   return (
                     <div
@@ -1407,13 +1398,15 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                       </div>
                     </div>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </div>
+          )}
 
-          {/* Column 3: 🟢 Fresh / Valid */}
-          <div className="bg-emerald-50/40 dark:bg-emerald-950/20 rounded-2xl border-2 border-emerald-200 dark:border-emerald-900/50 p-3.5 flex flex-col min-h-[520px]">
+          {/* Section 3: 🟢 Fresh / Valid */}
+          {(expirySubFilter === 'fresh' || expirySubFilter === 'all-dated') && (
+          <div className="bg-emerald-50/40 dark:bg-emerald-950/20 rounded-2xl border-2 border-emerald-200 dark:border-emerald-900/50 p-4">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-emerald-200 dark:border-emerald-900/50">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
@@ -1431,16 +1424,16 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
               </span>
             </div>
 
-            <div className="space-y-3 flex-1 overflow-y-auto max-h-[750px] pr-1">
-              {filteredFreshDatedProducts.length === 0 ? (
-                <div className="h-48 flex flex-col items-center justify-center text-center p-4 text-zinc-400">
-                  <Package className="w-10 h-10 text-emerald-300 dark:text-emerald-800 mb-2" />
-                  <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
-                    {language === 'bn' ? 'কোনো সতেজ পণ্য পাওয়া যায়নি!' : 'No fresh items found!'}
-                  </p>
-                </div>
-              ) : (
-                filteredFreshDatedProducts.map(p => {
+            {filteredFreshDatedProducts.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center p-4 text-zinc-400">
+                <Package className="w-10 h-10 text-emerald-300 dark:text-emerald-800 mb-2" />
+                <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                  {language === 'bn' ? 'কোনো সতেজ পণ্য পাওয়া যায়নি!' : 'No fresh items found!'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredFreshDatedProducts.map(p => {
                   const summary = productExpirySummaries.get(p.id) || getProductExpirySummary(p, 30);
                   return (
                     <div
@@ -1498,10 +1491,11 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                       </div>
                     </div>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </div>
+          )}
         </div>
       ) : (
       /* 6. Products Table or Logs Table */
@@ -1607,32 +1601,31 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
               </tbody>
             </table>
           ) : (
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs table-fixed">
               <thead className="bg-zinc-50 dark:bg-zinc-850 text-zinc-500 dark:text-zinc-400 font-semibold border-b border-zinc-200 dark:border-zinc-800">
                 <tr>
-                  <th className="py-3 px-4">{language === 'bn' ? 'পণ্যের নাম' : 'Product Name'}</th>
-                  <th className="py-3 px-4 font-mono">{language === 'bn' ? 'যোগের তারিখ' : 'Added Date'}</th>
-                  {isPharmacyMode && <th className="py-3 px-4">{language === 'bn' ? 'জেনেরিক' : 'Generic'}</th>}
-                  <th className="py-3 px-4">{language === 'bn' ? (isPharmacyMode ? 'ব্র্যান্ড / কোম্পানি' : 'ব্র্যান্ড / কোম্পানি') : 'Brand / Company'}</th>
-                  {isPharmacyMode && <th className="py-3 px-4">{language === 'bn' ? 'স্ট্রেংথ (Strength)' : 'Strength'}</th>}
-                  {isPharmacyMode && <th className="py-3 px-4">{language === 'bn' ? 'ডোজ ও সেবনবিধি' : 'Dosage & Rules'}</th>}
-                  <th className="py-3 px-4">{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</th>
-                  <th className="py-3 px-4 font-mono">{language === 'bn' ? 'র‍্যাক/শেলফ' : 'Rack Location'}</th>
-                  <th className="py-3 px-4 font-mono">{language === 'bn' ? 'বারকোড' : 'Barcode'}</th>
-                  <th className="py-3 px-4 font-mono">{language === 'bn' ? 'ব্যাচ নং' : 'Batch No'}</th>
-                  <th className="py-3 px-4 font-mono">{language === 'bn' ? 'মেয়াদ তারিখ' : 'Exp. Date'}</th>
-                  <th className="py-3 px-4 text-right font-mono">{language === 'bn' ? 'ক্রয় দর' : 'Cost Price'}</th>
-                  <th className="py-3 px-4 text-right font-mono">{language === 'bn' ? 'বিক্রয় দর' : 'Sales Price'}</th>
-                  <th className="py-3 px-4 text-center font-mono">{language === 'bn' ? 'মার্জিন' : 'Margin'}</th>
-                  <th className="py-3 px-4 text-center font-mono">{language === 'bn' ? 'স্টক' : 'Stock'}</th>
-                  <th className="py-3 px-4 text-right font-mono">{language === 'bn' ? 'মোট মজুদ মান' : 'Total Asset'}</th>
-                  <th className="py-3 px-4 text-center">{language === 'bn' ? 'অ্যাকশন' : 'Actions'}</th>
+                  <th className="py-3 px-2 w-32 truncate whitespace-nowrap">{language === 'bn' ? 'পণ্যের নাম' : 'Product Name'}</th>
+                  <th className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono">{language === 'bn' ? 'যোগের তারিখ' : 'Added Date'}</th>
+                  {isPharmacyMode && <th className="py-3 px-2 w-20 truncate whitespace-nowrap">{language === 'bn' ? 'জেনেরিক' : 'Generic'}</th>}
+                  <th className="py-3 px-2 w-24 truncate whitespace-nowrap">{language === 'bn' ? 'ব্র্যান্ড / কোম্পানি' : 'Brand / Company'}</th>
+                  {isPharmacyMode && <th className="py-3 px-2 w-16 truncate whitespace-nowrap">{language === 'bn' ? 'স্ট্রেংথ' : 'Strength'}</th>}
+                  {isPharmacyMode && <th className="py-3 px-2 w-20 truncate whitespace-nowrap">{language === 'bn' ? 'ডোজ' : 'Dosage'}</th>}
+                  <th className="py-3 px-2 w-20 truncate whitespace-nowrap">{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</th>
+                  <th className="py-3 px-2 w-16 truncate whitespace-nowrap font-mono">{language === 'bn' ? 'র‍্যাক' : 'Rack'}</th>
+                  <th className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono">{language === 'bn' ? 'বারকোড' : 'Barcode'}</th>
+                  <th className="py-3 px-2 w-16 truncate whitespace-nowrap font-mono">{language === 'bn' ? 'ব্যাচ নং' : 'Batch No'}</th>
+                  <th className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono">{language === 'bn' ? 'মেয়াদ তারিখ' : 'Exp. Date'}</th>
+                  <th className="py-3 px-2 w-16 truncate whitespace-nowrap text-right font-mono">{language === 'bn' ? 'ক্রয় দর' : 'Cost'}</th>
+                  <th className="py-3 px-2 w-16 truncate whitespace-nowrap text-right font-mono">{language === 'bn' ? 'বিক্রয় দর' : 'Sales'}</th>
+                  <th className="py-3 px-2 w-12 truncate whitespace-nowrap text-center font-mono">{language === 'bn' ? 'স্টক' : 'Stock'}</th>
+                  <th className="py-3 px-2 w-20 truncate whitespace-nowrap text-right font-mono">{language === 'bn' ? 'মোট মজুদ মান' : 'Total Asset'}</th>
+                  <th className="py-3 px-2 w-16 truncate whitespace-nowrap text-center">{language === 'bn' ? 'অ্যাকশন' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={isPharmacyMode ? 17 : 14} className="py-12 text-center text-zinc-400">
+                    <td colSpan={isPharmacyMode ? 16 : 13} className="py-12 text-center text-zinc-400">
                       {language === 'bn' ? 'নির্বাচিত ফিল্টারে কোনো পণ্য পাওয়া যায়নি।' : 'No products found for the selected filters.'}
                     </td>
                   </tr>
@@ -1661,220 +1654,121 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                         }`}
                       >
                         {/* Item and SKU */}
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
+                        <td className="py-3 px-2 w-32 truncate whitespace-nowrap">
+                          <div className="flex items-center gap-2">
                             {p.imageUrl || p.image ? (
-                              <img src={p.imageUrl || p.image} alt="" className="w-9 h-9 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0" />
+                              <img src={p.imageUrl || p.image} alt="" className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0" />
                             ) : (
-                              <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0 border border-slate-200 dark:border-slate-700">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0 border border-slate-200 dark:border-slate-700">
                                 <Package className="w-4 h-4" />
                               </div>
                             )}
-                            <div>
-                              <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 flex-wrap">
+                            <div className="truncate">
+                              <div className="font-bold text-zinc-900 dark:text-white truncate">
                                 <span>{p.name}</span>
-                                {p.nameBn && <span className="text-zinc-500 font-normal">({p.nameBn})</span>}
                               </div>
+                              {p.nameBn && <div className="text-[10px] text-zinc-500 truncate">{p.nameBn}</div>}
                             </div>
                           </div>
                         </td>
 
                         {/* Created / Added Date */}
-                        <td className="py-3 px-4 font-mono text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
+                        <td className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono text-zinc-600 dark:text-zinc-400">
                           {p.createdAt ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
-                              <Calendar className="w-3 h-3 text-zinc-400" />
+                            <span className="inline-flex items-center gap-1 text-[10px] bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded truncate">
                               {p.createdAt.substring(0, 10)}
                             </span>
                           ) : (
-                            <span className="text-zinc-400 text-[11px]">N/A</span>
+                            <span className="text-zinc-400 text-[10px]">N/A</span>
                           )}
                         </td>
 
                         {/* Generic (Pharmacy only) */}
                         {isPharmacyMode && (
-                          <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
+                          <td className="py-3 px-2 w-20 truncate whitespace-nowrap text-zinc-700 dark:text-zinc-300 font-medium">
                             {p.generic || '—'}
                           </td>
                         )}
 
                         {/* Brand / Manufacturer */}
-                        <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
+                        <td className="py-3 px-2 w-24 truncate whitespace-nowrap text-zinc-700 dark:text-zinc-300 font-medium">
                           {p.manufacturer || '—'}
                         </td>
 
                         {/* Strength (Pharmacy only) */}
                         {isPharmacyMode && (
-                          <td className="py-3 px-4 font-mono font-bold text-blue-700 dark:text-blue-300 whitespace-nowrap">
-                            {p.strength ? (
-                              <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 rounded">
-                                {p.strength}
-                              </span>
-                            ) : (
-                              '—'
-                            )}
+                          <td className="py-3 px-2 w-16 truncate whitespace-nowrap font-mono font-bold text-blue-700 dark:text-blue-300">
+                             {p.strength || '—'}
                           </td>
                         )}
 
                         {/* Dosage Form & Schedule (Pharmacy only) */}
                         {isPharmacyMode && (
-                          <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium whitespace-nowrap">
-                            {p.dosageForm || p.dosageSchedule ? (
-                              <div className="space-y-0.5">
-                                {p.dosageForm && (
-                                  <span className="inline-block px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded">
-                                    {p.dosageForm}
-                                  </span>
-                                )}
-                                {p.dosageSchedule && (
-                                  <div className="text-[11px] text-purple-700 dark:text-purple-300 font-semibold">
-                                    {p.dosageSchedule}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              '—'
-                            )}
+                          <td className="py-3 px-2 w-20 truncate whitespace-nowrap text-zinc-700 dark:text-zinc-300">
+                            {p.dosageForm || '—'}
                           </td>
                         )}
 
                         {/* Category */}
-                        <td className="py-3 px-4 text-zinc-600 dark:text-zinc-300">
-                          <div className="font-semibold text-xs text-zinc-800 dark:text-zinc-200">
-                            {p.categoryName || 'General'}
-                          </div>
+                        <td className="py-3 px-2 w-20 truncate whitespace-nowrap text-zinc-600 dark:text-zinc-300">
+                          {p.categoryName || 'General'}
                         </td>
 
                         {/* Rack Location */}
-                        <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">
-                          {p.rackLocation ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 rounded font-bold">
-                              <MapPin className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                              <span>{p.rackLocation}</span>
-                            </span>
-                          ) : (
-                            <span className="text-zinc-400 font-normal">—</span>
-                          )}
+                        <td className="py-3 px-2 w-16 truncate whitespace-nowrap font-mono text-xs">
+                          {p.rackLocation || '—'}
                         </td>
 
                         {/* Barcode */}
-                        <td className="py-3 px-4 font-mono text-zinc-500">
-                          {p.barcode}
+                        <td className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono text-zinc-500">
+                          {p.barcode || '—'}
                         </td>
 
                         {/* Batch Number */}
-                        <td className="py-3 px-4 font-mono text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
-                          {(() => {
-                            const batchList: string[] = [];
-                            if (p.batchNumber && p.batchNumber.trim()) {
-                              batchList.push(p.batchNumber.trim());
-                            }
-                            if (p.batches) {
-                              p.batches.forEach(b => {
-                                if (b.batchNumber && b.batchNumber.trim() && !batchList.includes(b.batchNumber.trim())) {
-                                  batchList.push(b.batchNumber.trim());
-                                }
-                              });
-                            }
-
-                            if (batchList.length === 0) {
-                              return <span className="text-zinc-400 text-[11px]">N/A</span>;
-                            }
-
-                            const query = search.trim().toLowerCase();
-                            const matchedBatch = query ? batchList.find(b => b.toLowerCase().includes(query)) : null;
-                            const displayBatch = matchedBatch || batchList[0];
-
-                            return (
-                              <div className="flex items-center gap-1 flex-wrap">
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11px] font-bold ${
-                                  matchedBatch
-                                    ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-200 dark:border-amber-700 ring-1 ring-amber-400'
-                                    : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
-                                }`}>
-                                  {displayBatch}
-                                </span>
-                                {batchList.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setBatchProduct(p)}
-                                    className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer"
-                                    title={language === 'bn' ? `মোট ${batchList.length}টি ব্যাচ দেখুন` : `View all ${batchList.length} batches`}
-                                  >
-                                    +{batchList.length - 1}
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })()}
+                        <td className="py-3 px-2 w-16 truncate whitespace-nowrap font-mono text-zinc-600 dark:text-zinc-300">
+                          {p.batchNumber || 'N/A'}
                         </td>
 
                         {/* Expiry Date */}
-                        <td className="py-3 px-4 font-mono whitespace-nowrap">
-                          {summary.hasAnyExpiry ? (
-                            <div className="flex items-center gap-1.5">
-                              {itemExpired ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 font-bold text-[11px] border border-rose-300 dark:border-rose-900 shadow-2xs">
-                                  <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
-                                  <span>🔴 Expired: {summary.formattedDisplayDate}</span>
-                                </span>
-                              ) : itemExpiringSoon ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 font-bold text-[11px] border border-amber-300 dark:border-amber-900 shadow-2xs">
-                                  <Clock className="w-3 h-3 text-amber-600 animate-pulse shrink-0" />
-                                  <span>🟡 Within 30d: {summary.formattedDisplayDate} ({summary.minDaysRemaining}d)</span>
-                                </span>
-                              ) : itemFresh ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold text-[11px] border border-emerald-200 dark:border-emerald-800">
-                                  <Check className="w-3 h-3 text-emerald-600 shrink-0" />
-                                  <span>🟢 Fresh: {summary.formattedDisplayDate}</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 text-[11px]">
-                                  {summary.formattedDisplayDate}
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setQuickDateProduct(p);
-                                  setQuickDateValue(summary.formattedDisplayDate || p.expDate || '');
-                                }}
-                                className="p-1 hover:bg-indigo-50 dark:hover:bg-zinc-800 rounded text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
-                                title={language === 'bn' ? 'মেয়াদ তারিখ পরিবর্তন করুন' : 'Change Expiry Date'}
-                              >
-                                <Calendar className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1">
-                              <span className="text-zinc-400 text-[11px]">N/A</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setQuickDateProduct(p);
-                                  setQuickDateValue('');
-                                }}
-                                className="text-[10px] text-indigo-600 hover:underline ml-1 cursor-pointer font-semibold"
-                              >
-                                {language === 'bn' ? '+মেয়াদ দিন' : '+Add Exp'}
-                              </button>
-                            </div>
-                          )}
+                        <td className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono">
+                          {summary.formattedDisplayDate || p.expDate || 'N/A'}
                         </td>
 
                         {/* Cost Price */}
-                        <td className="py-3 px-4 text-right font-mono text-zinc-600 dark:text-zinc-300">
+                        <td className="py-3 px-2 w-16 truncate whitespace-nowrap text-right font-mono text-zinc-600 dark:text-zinc-300">
                           {formatCurrency(p.purchasePrice)}
+                        </td>
+
+                        {/* Sales Price */}
+                        <td className="py-3 px-2 w-16 truncate whitespace-nowrap text-right font-mono text-zinc-600 dark:text-zinc-300">
+                          {formatCurrency(p.salesPrice)}
+                        </td>
+
+                        {/* Stock */}
+                        <td className="py-3 px-2 w-12 truncate whitespace-nowrap text-center font-mono font-bold">
+                          {p.stock}
+                        </td>
+
+                        {/* Total Asset */}
+                        <td className="py-3 px-2 w-20 truncate whitespace-nowrap text-right font-mono font-bold">
+                          {formatCurrency(lineValuation)}
+                        </td>
+                        
+                        {/* Actions */}
+                        <td className="py-3 px-2 w-16 truncate whitespace-nowrap text-center">
+                          <button
+                            type="button"
+                            onClick={() => onOpenEditModal(p)}
+                            className="text-indigo-600 hover:text-indigo-800"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
                         </td>
 
                         {/* Sales Price */}
                         <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
                           {formatCurrency(p.salesPrice)}
-                        </td>
-
-                        {/* Margin */}
-                        <td className="py-3 px-4 text-center font-mono font-semibold text-zinc-700 dark:text-zinc-300">
-                          {marginPct}%
                         </td>
 
                         {/* Stock Quantity */}

@@ -1537,12 +1537,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch {}
     };
 
-    window.addEventListener('pagehide', handleSiteExit);
-    window.addEventListener('beforeunload', handleSiteExit);
+    // window.addEventListener('pagehide', handleSiteExit);
+    // window.addEventListener('beforeunload', handleSiteExit);
 
     return () => {
-      window.removeEventListener('pagehide', handleSiteExit);
-      window.removeEventListener('beforeunload', handleSiteExit);
+      // window.removeEventListener('pagehide', handleSiteExit);
+      // window.removeEventListener('beforeunload', handleSiteExit);
     };
   }, [currentUser, language]);
 
@@ -2648,30 +2648,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const cat = categories.find(c => c.id === catId);
 
           let nextBatches = updates.batches || p.batches;
-          if (updates.expDate !== undefined) {
+          if (!updates.batches && updates.expDate !== undefined) {
             const cleanExp = updates.expDate ? normalizeDateToISO(updates.expDate) || updates.expDate : '';
             if (nextBatches && nextBatches.length > 0) {
-              if (nextBatches.length === 1) {
-                nextBatches = [{
-                  ...nextBatches[0],
-                  expDate: cleanExp,
-                  batchNumber: updates.batchNumber || nextBatches[0].batchNumber,
-                }];
-              } else {
-                const targetBatchNum = updates.batchNumber || p.batchNumber;
-                const matchIdx = targetBatchNum
-                  ? nextBatches.findIndex(b => b.batchNumber === targetBatchNum)
-                  : -1;
-                if (matchIdx >= 0) {
-                  nextBatches = nextBatches.map((b, idx) =>
-                    idx === matchIdx ? { ...b, expDate: cleanExp } : b
-                  );
-                } else {
-                  nextBatches = nextBatches.map((b, idx) =>
-                    idx === 0 ? { ...b, expDate: cleanExp } : b
-                  );
-                }
-              }
+              nextBatches = nextBatches.map(b => ({
+                ...b,
+                expDate: cleanExp,
+                batchNumber: updates.batchNumber || b.batchNumber,
+              }));
             } else if (cleanExp) {
               nextBatches = [{
                 id: `batch-${Date.now()}`,
