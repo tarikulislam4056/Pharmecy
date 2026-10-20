@@ -224,6 +224,11 @@ export interface CartItem {
   serialNumber?: string;
   warrantyInfo?: string;
   warrantyExpDate?: string;
+  strength?: string;
+  dosageForm?: string;
+  dosage?: string;
+  dosageSchedule?: string;
+  manufacturer?: string;
 }
 
 export type PaymentMethod = 'CASH' | 'BANK' | 'MFS' | 'DUE' | 'SPLIT' | 'INSTALLMENT';
@@ -947,6 +952,16 @@ export interface CompanySettings {
   autoSyncIntervalSeconds?: number;
   productGenerics?: string[];
   productManufacturers?: string[];
+  keyboardShortcuts?: {
+    categoryBn: string;
+    categoryEn: string;
+    shortcuts: {
+      keys: string[];
+      labelBn: string;
+      labelEn: string;
+      targetTab?: string;
+    }[];
+  }[];
 }
 
 export interface CashAdjustment {

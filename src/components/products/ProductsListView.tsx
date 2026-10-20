@@ -1601,25 +1601,25 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
               </tbody>
             </table>
           ) : (
-            <table className="w-full text-left text-xs table-fixed">
-              <thead className="bg-zinc-50 dark:bg-zinc-850 text-zinc-500 dark:text-zinc-400 font-semibold border-b border-zinc-200 dark:border-zinc-800">
+            <table className="min-w-full text-left text-xs divide-y divide-zinc-200 dark:divide-zinc-800">
+              <thead className="bg-zinc-50 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300 font-bold border-b border-zinc-200 dark:border-zinc-800">
                 <tr>
-                  <th className="py-3 px-2 w-32 truncate whitespace-nowrap">{language === 'bn' ? 'পণ্যের নাম' : 'Product Name'}</th>
-                  <th className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono">{language === 'bn' ? 'যোগের তারিখ' : 'Added Date'}</th>
-                  {isPharmacyMode && <th className="py-3 px-2 w-20 truncate whitespace-nowrap">{language === 'bn' ? 'জেনেরিক' : 'Generic'}</th>}
-                  <th className="py-3 px-2 w-24 truncate whitespace-nowrap">{language === 'bn' ? 'ব্র্যান্ড / কোম্পানি' : 'Brand / Company'}</th>
-                  {isPharmacyMode && <th className="py-3 px-2 w-16 truncate whitespace-nowrap">{language === 'bn' ? 'স্ট্রেংথ' : 'Strength'}</th>}
-                  {isPharmacyMode && <th className="py-3 px-2 w-20 truncate whitespace-nowrap">{language === 'bn' ? 'ডোজ' : 'Dosage'}</th>}
-                  <th className="py-3 px-2 w-20 truncate whitespace-nowrap">{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</th>
-                  <th className="py-3 px-2 w-16 truncate whitespace-nowrap font-mono">{language === 'bn' ? 'র‍্যাক' : 'Rack'}</th>
-                  <th className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono">{language === 'bn' ? 'বারকোড' : 'Barcode'}</th>
-                  <th className="py-3 px-2 w-16 truncate whitespace-nowrap font-mono">{language === 'bn' ? 'ব্যাচ নং' : 'Batch No'}</th>
-                  <th className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono">{language === 'bn' ? 'মেয়াদ তারিখ' : 'Exp. Date'}</th>
-                  <th className="py-3 px-2 w-16 truncate whitespace-nowrap text-right font-mono">{language === 'bn' ? 'ক্রয় দর' : 'Cost'}</th>
-                  <th className="py-3 px-2 w-16 truncate whitespace-nowrap text-right font-mono">{language === 'bn' ? 'বিক্রয় দর' : 'Sales'}</th>
-                  <th className="py-3 px-2 w-12 truncate whitespace-nowrap text-center font-mono">{language === 'bn' ? 'স্টক' : 'Stock'}</th>
-                  <th className="py-3 px-2 w-20 truncate whitespace-nowrap text-right font-mono">{language === 'bn' ? 'মোট মজুদ মান' : 'Total Asset'}</th>
-                  <th className="py-3 px-2 w-16 truncate whitespace-nowrap text-center">{language === 'bn' ? 'অ্যাকশন' : 'Actions'}</th>
+                  <th className="py-3 px-3 min-w-[170px] whitespace-nowrap">{language === 'bn' ? 'পণ্যের নাম' : 'Product Name'}</th>
+                  <th className="py-3 px-3 min-w-[105px] whitespace-nowrap font-mono">{language === 'bn' ? 'যোগের তারিখ' : 'Added Date'}</th>
+                  {isPharmacyMode && <th className="py-3 px-3 min-w-[110px] whitespace-nowrap">{language === 'bn' ? 'জেনেরিক' : 'Generic'}</th>}
+                  <th className="py-3 px-3 min-w-[130px] whitespace-nowrap">{language === 'bn' ? 'ব্র্যান্ড / কোম্পানি' : 'Brand / Company'}</th>
+                  {isPharmacyMode && <th className="py-3 px-3 min-w-[85px] whitespace-nowrap text-center font-mono">{language === 'bn' ? 'স্ট্রেংথ' : 'Strength'}</th>}
+                  {isPharmacyMode && <th className="py-3 px-3 min-w-[95px] whitespace-nowrap">{language === 'bn' ? 'ডোজ' : 'Dosage'}</th>}
+                  <th className="py-3 px-3 min-w-[110px] whitespace-nowrap">{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</th>
+                  <th className="py-3 px-3 min-w-[75px] whitespace-nowrap text-center font-mono">{language === 'bn' ? 'র‍্যাক' : 'Rack'}</th>
+                  <th className="py-3 px-3 min-w-[110px] whitespace-nowrap font-mono">{language === 'bn' ? 'বারকোড' : 'Barcode'}</th>
+                  <th className="py-3 px-3 min-w-[95px] whitespace-nowrap font-mono">{language === 'bn' ? 'ব্যাচ নং' : 'Batch No'}</th>
+                  <th className="py-3 px-3 min-w-[105px] whitespace-nowrap font-mono">{language === 'bn' ? 'মেয়াদ তারিখ' : 'Exp. Date'}</th>
+                  <th className="py-3 px-3 min-w-[90px] whitespace-nowrap text-right font-mono">{language === 'bn' ? 'ক্রয় দর' : 'Cost'}</th>
+                  <th className="py-3 px-3 min-w-[90px] whitespace-nowrap text-right font-mono">{language === 'bn' ? 'বিক্রয় দর' : 'Sales'}</th>
+                  <th className="py-3 px-3 min-w-[95px] whitespace-nowrap text-center font-mono">{language === 'bn' ? 'স্টক' : 'Stock'}</th>
+                  <th className="py-3 px-3 min-w-[110px] whitespace-nowrap text-right font-mono">{language === 'bn' ? 'মোট মজুদ মান' : 'Total Asset'}</th>
+                  <th className="py-3 px-3 min-w-[140px] whitespace-nowrap text-center">{language === 'bn' ? 'অ্যাকশন' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -1653,9 +1653,9 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                             : ''
                         }`}
                       >
-                        {/* Item and SKU */}
-                        <td className="py-3 px-2 w-32 truncate whitespace-nowrap">
-                          <div className="flex items-center gap-2">
+                        {/* 1. Item Name and SKU */}
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <div className="flex items-center gap-2.5">
                             {p.imageUrl || p.image ? (
                               <img src={p.imageUrl || p.image} alt="" className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0" />
                             ) : (
@@ -1663,118 +1663,100 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                                 <Package className="w-4 h-4" />
                               </div>
                             )}
-                            <div className="truncate">
-                              <div className="font-bold text-zinc-900 dark:text-white truncate">
+                            <div>
+                              <div className="font-bold text-zinc-900 dark:text-white">
                                 <span>{p.name}</span>
                               </div>
-                              {p.nameBn && <div className="text-[10px] text-zinc-500 truncate">{p.nameBn}</div>}
+                              {p.sku && <div className="text-[10px] text-zinc-400 font-mono">SKU: {p.sku}</div>}
+                              {p.nameBn && <div className="text-[10px] text-zinc-500">{p.nameBn}</div>}
                             </div>
                           </div>
                         </td>
 
-                        {/* Created / Added Date */}
-                        <td className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono text-zinc-600 dark:text-zinc-400">
+                        {/* 2. Created / Added Date */}
+                        <td className="py-3 px-3 whitespace-nowrap font-mono text-zinc-600 dark:text-zinc-400">
                           {p.createdAt ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded truncate">
+                            <span className="inline-flex items-center gap-1 text-[11px] bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-mono">
                               {p.createdAt.substring(0, 10)}
                             </span>
                           ) : (
-                            <span className="text-zinc-400 text-[10px]">N/A</span>
+                            <span className="text-zinc-400 text-[11px]">N/A</span>
                           )}
                         </td>
 
-                        {/* Generic (Pharmacy only) */}
+                        {/* 3. Generic (Pharmacy only) */}
                         {isPharmacyMode && (
-                          <td className="py-3 px-2 w-20 truncate whitespace-nowrap text-zinc-700 dark:text-zinc-300 font-medium">
+                          <td className="py-3 px-3 whitespace-nowrap text-zinc-700 dark:text-zinc-300 font-medium">
                             {p.generic || '—'}
                           </td>
                         )}
 
-                        {/* Brand / Manufacturer */}
-                        <td className="py-3 px-2 w-24 truncate whitespace-nowrap text-zinc-700 dark:text-zinc-300 font-medium">
+                        {/* 4. Brand / Manufacturer */}
+                        <td className="py-3 px-3 whitespace-nowrap text-zinc-700 dark:text-zinc-300 font-medium">
                           {p.manufacturer || '—'}
                         </td>
 
-                        {/* Strength (Pharmacy only) */}
+                        {/* 5. Strength (Pharmacy only) */}
                         {isPharmacyMode && (
-                          <td className="py-3 px-2 w-16 truncate whitespace-nowrap font-mono font-bold text-blue-700 dark:text-blue-300">
+                          <td className="py-3 px-3 whitespace-nowrap font-mono font-bold text-blue-700 dark:text-blue-300 text-center">
                              {p.strength || '—'}
                           </td>
                         )}
 
-                        {/* Dosage Form & Schedule (Pharmacy only) */}
+                        {/* 6. Dosage Form & Schedule (Pharmacy only) */}
                         {isPharmacyMode && (
-                          <td className="py-3 px-2 w-20 truncate whitespace-nowrap text-zinc-700 dark:text-zinc-300">
+                          <td className="py-3 px-3 whitespace-nowrap text-zinc-700 dark:text-zinc-300">
                             {p.dosageForm || '—'}
                           </td>
                         )}
 
-                        {/* Category */}
-                        <td className="py-3 px-2 w-20 truncate whitespace-nowrap text-zinc-600 dark:text-zinc-300">
+                        {/* 7. Category */}
+                        <td className="py-3 px-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300">
                           {p.categoryName || 'General'}
                         </td>
 
-                        {/* Rack Location */}
-                        <td className="py-3 px-2 w-16 truncate whitespace-nowrap font-mono text-xs">
+                        {/* 8. Rack Location */}
+                        <td className="py-3 px-3 whitespace-nowrap font-mono text-xs text-center font-bold text-zinc-700 dark:text-zinc-300">
                           {p.rackLocation || '—'}
                         </td>
 
-                        {/* Barcode */}
-                        <td className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono text-zinc-500">
+                        {/* 9. Barcode */}
+                        <td className="py-3 px-3 whitespace-nowrap font-mono text-zinc-600 dark:text-zinc-400">
                           {p.barcode || '—'}
                         </td>
 
-                        {/* Batch Number */}
-                        <td className="py-3 px-2 w-16 truncate whitespace-nowrap font-mono text-zinc-600 dark:text-zinc-300">
+                        {/* 10. Batch Number */}
+                        <td className="py-3 px-3 whitespace-nowrap font-mono text-zinc-700 dark:text-zinc-300">
                           {p.batchNumber || 'N/A'}
                         </td>
 
-                        {/* Expiry Date */}
-                        <td className="py-3 px-2 w-20 truncate whitespace-nowrap font-mono">
-                          {summary.formattedDisplayDate || p.expDate || 'N/A'}
+                        {/* 11. Expiry Date */}
+                        <td className="py-3 px-3 whitespace-nowrap font-mono">
+                          <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                            itemExpired
+                              ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                              : itemExpiringSoon
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                              : 'text-zinc-700 dark:text-zinc-300'
+                          }`}>
+                            {summary.formattedDisplayDate || p.expDate || 'N/A'}
+                          </span>
                         </td>
 
-                        {/* Cost Price */}
-                        <td className="py-3 px-2 w-16 truncate whitespace-nowrap text-right font-mono text-zinc-600 dark:text-zinc-300">
+                        {/* 12. Cost Price */}
+                        <td className="py-3 px-3 whitespace-nowrap text-right font-mono text-zinc-600 dark:text-zinc-300">
                           {formatCurrency(p.purchasePrice)}
                         </td>
 
-                        {/* Sales Price */}
-                        <td className="py-3 px-2 w-16 truncate whitespace-nowrap text-right font-mono text-zinc-600 dark:text-zinc-300">
+                        {/* 13. Sales Price */}
+                        <td className="py-3 px-3 whitespace-nowrap text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
                           {formatCurrency(p.salesPrice)}
                         </td>
 
-                        {/* Stock */}
-                        <td className="py-3 px-2 w-12 truncate whitespace-nowrap text-center font-mono font-bold">
-                          {p.stock}
-                        </td>
-
-                        {/* Total Asset */}
-                        <td className="py-3 px-2 w-20 truncate whitespace-nowrap text-right font-mono font-bold">
-                          {formatCurrency(lineValuation)}
-                        </td>
-                        
-                        {/* Actions */}
-                        <td className="py-3 px-2 w-16 truncate whitespace-nowrap text-center">
-                          <button
-                            type="button"
-                            onClick={() => onOpenEditModal(p)}
-                            className="text-indigo-600 hover:text-indigo-800"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </button>
-                        </td>
-
-                        {/* Sales Price */}
-                        <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                          {formatCurrency(p.salesPrice)}
-                        </td>
-
-                        {/* Stock Quantity */}
-                        <td className="py-3 px-4 text-center">
+                        {/* 14. Stock Quantity */}
+                        <td className="py-3 px-3 whitespace-nowrap text-center">
                           <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-mono font-bold text-xs ${
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full font-mono font-bold text-xs ${
                               p.stock <= 0
                                 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
                                 : isLow
@@ -1782,17 +1764,17 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                                 : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200'
                             }`}
                           >
-                            {Number(p.stock)} {p.unit}
+                            {Number(p.stock)} {p.unit || 'Pcs'}
                           </span>
                         </td>
 
-                        {/* Total Cost Valuation */}
-                        <td className="py-3 px-4 text-right font-mono font-semibold text-zinc-900 dark:text-white">
+                        {/* 15. Total Cost Valuation */}
+                        <td className="py-3 px-3 whitespace-nowrap text-right font-mono font-bold text-zinc-900 dark:text-white">
                           {formatCurrency(lineValuation)}
                         </td>
 
-                        {/* Actions */}
-                        <td className="py-3 px-4 text-center">
+                        {/* 16. Actions */}
+                        <td className="py-3 px-3 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-1">
                             <button
                               type="button"
@@ -1856,8 +1838,8 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                   })
                 )}
               </tbody>
-            </table>
-          )}
+              </table>
+            )}
         </div>
       </div>
       )}

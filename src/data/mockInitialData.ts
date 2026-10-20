@@ -49,6 +49,39 @@ export const initialCompanySettings: CompanySettings = {
   smsSenderId: 'SILVAIT',
   autoSyncEnabled: true,
   autoSyncIntervalSeconds: 30,
+  keyboardShortcuts: [
+    {
+      categoryBn: 'প্রধান নেভিগেশন (Navigation)',
+      categoryEn: 'Main Navigation',
+      shortcuts: [
+        { keys: ['Ctrl', 'N'], labelBn: 'নতুন বিক্রয় / POS এ যান', labelEn: 'New Sale / Open POS', targetTab: 'pos' },
+        { keys: ['Ctrl', 'P'], labelBn: 'পণ্য ও স্টক তালিকা', labelEn: 'Products & Inventory', targetTab: 'products-list' },
+        { keys: ['Ctrl', 'D'], labelBn: 'ড্যাশবোর্ড হোমে ফিরুন', labelEn: 'Return to Dashboard', targetTab: 'dashboard' },
+        { keys: ['Ctrl', 'B'], labelBn: 'ডে বুক ও ক্যাশ হিসাব', labelEn: 'Day Book & Daily Cash', targetTab: 'daybook' },
+        { keys: ['Ctrl', 'S'], labelBn: 'বিক্রি তালিকা (Sales List)', labelEn: 'Sales History & Invoices', targetTab: 'sales-list' },
+        { keys: ['Ctrl', 'Shift', 'P'], labelBn: 'নতুন ক্রয় ইন্ট্রি (Purchase Entry)', labelEn: 'New Purchase Entry', targetTab: 'purchase-entry' },
+        { keys: ['Ctrl', 'R'], labelBn: 'রিপোর্টস ও অ্যানালিটিক্স', labelEn: 'Reports & Business Analytics', targetTab: 'reports' },
+      ],
+    },
+    {
+      categoryBn: 'দ্রুত ইন্ট্রি ও পপআপ (Quick Actions)',
+      categoryEn: 'Quick Entry & Modals',
+      shortcuts: [
+        { keys: ['Ctrl', 'E'], labelBn: 'নতুন খরচ যুক্ত করুন (Add Expense)', labelEn: 'Record New Expense' },
+        { keys: ['Ctrl', 'I'], labelBn: 'কাস্টমার থেকে টাকা প্রাপ্তি (Payment In)', labelEn: 'Receive Customer Payment' },
+        { keys: ['Ctrl', 'O'], labelBn: 'মহাজনকে টাকা পরিশোধ (Payment Out)', labelEn: 'Supplier Payment Out' },
+        { keys: ['Ctrl', 'K'], labelBn: 'ভাউচার ও মেমো দ্রুত সার্চ', labelEn: 'Global Voucher & Memo Search' },
+      ],
+    },
+    {
+      categoryBn: 'সিস্টেম ও হেল্প (System & Help)',
+      categoryEn: 'System & Helper',
+      shortcuts: [
+        { keys: ['Shift', '?'], labelBn: 'কীবোর্ড শর্টকাট গাইড খুলুন/বন্ধ করুন', labelEn: 'Open / Close Keyboard Shortcuts' },
+        { keys: ['Esc'], labelBn: 'যেকোনো খোলা পপআপ / উইন্ডো বন্ধ করুন', labelEn: 'Close active modal / overlay' },
+      ],
+    },
+  ],
 };
 
 export const initialCategories: Category[] = [];

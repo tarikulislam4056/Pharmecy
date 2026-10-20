@@ -1137,16 +1137,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       walletName = selectedWallet.name;
     }
 
-    const billNum = customBillNumber?.trim() || generatePurchaseBillNumber(purchaseInvoices);
+    let billNum = customBillNumber?.trim() || generatePurchaseBillNumber(purchaseInvoices);
     const duplicateBill = checkDuplicatePurchaseInvoice(billNum, purchaseInvoices);
     if (duplicateBill) {
+      billNum = generatePurchaseBillNumber(purchaseInvoices);
       showToast(
         language === 'bn'
-          ? `আগে থেকে এই Invoice No এন্ট্রি আছে! (${billNum}) ইতিমধ্যে "${duplicateBill.supplierName}"-এর ক্রয়ে ব্যবহৃত। একই ইনভয়েস নং দুইবার এন্ট্রি হবে না।`
-          : `This Invoice No is already entered previously! (${billNum}) Duplicate Invoice No not allowed.`,
-        'error'
+          ? `⚠️ পূর্বের বিল নং ডুপ্লিকেট থাকায় স্বয়ংক্রিয়ভাবে নতুন বিল নং (${billNum}) জেনারেট করা হয়েছে।`
+          : `⚠️ Previous bill number was duplicate, automatically generated new bill number (${billNum}).`,
+        'info'
       );
-      return null;
     }
 
     const nowTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -3328,19 +3328,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const rawInvNum = data.invoiceNumber?.trim();
-    const invNum = rawInvNum || generateSaleInvoiceNumber(saleInvoices);
+    let invNum = rawInvNum || generateSaleInvoiceNumber(saleInvoices);
 
-    // Duplicate Invoice No Validation
+    // Duplicate Invoice No Validation - Auto-correct if duplicate
     const duplicateInv = checkDuplicateSaleInvoice(invNum, saleInvoices);
-
     if (duplicateInv) {
+      invNum = generateSaleInvoiceNumber(saleInvoices);
       showToast(
         language === 'bn'
-          ? `আগে থেকে এই Invoice No এন্ট্রি আছে! (${invNum}) ইতিমধ্যে "${duplicateInv.customerName}"-এর চালানে ব্যবহৃত। একই ইনভয়েস নং দুইবার এন্ট্রি হবে না।`
-          : `This Invoice No is already entered previously! (${invNum}) Duplicate Invoice No not allowed.`,
-        'error'
+          ? `⚠️ পূর্বের ইনভয়েস নং ডুপ্লিকেট থাকায় স্বয়ংক্রিয়ভাবে নতুন ইনভয়েস নং (${invNum}) জেনারেট করা হয়েছে।`
+          : `⚠️ Previous invoice number was duplicate, automatically generated new invoice number (${invNum}).`,
+        'info'
       );
-      return null as any;
     }
 
     const invDate = data.date || new Date().toISOString().split('T')[0];
@@ -4262,19 +4261,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     date?: string;
   }): PurchaseInvoice => {
     const rawBillNum = data.billNumber?.trim() || data.supplierInvoiceNo?.trim();
-    const billNum = rawBillNum || generatePurchaseBillNumber(purchaseInvoices);
+    let billNum = rawBillNum || generatePurchaseBillNumber(purchaseInvoices);
 
-    // Duplicate Purchase Bill / Invoice No Validation
+    // Duplicate Purchase Bill / Invoice No Validation - Auto-correct if duplicate
     const duplicateBill = checkDuplicatePurchaseInvoice(billNum, purchaseInvoices);
-
     if (duplicateBill) {
+      billNum = generatePurchaseBillNumber(purchaseInvoices);
       showToast(
         language === 'bn'
-          ? `আগে থেকে এই Invoice No এন্ট্রি আছে! (${billNum}) ইতিমধ্যে "${duplicateBill.supplierName}"-এর ক্রয়ে ব্যবহৃত। একই ইনভয়েস নং দুইবার এন্ট্রি হবে না।`
-          : `This Invoice No is already entered previously! (${billNum}) Duplicate Invoice No not allowed.`,
-        'error'
+          ? `⚠️ পূর্বের বিল নং ডুপ্লিকেট থাকায় স্বয়ংক্রিয়ভাবে নতুন বিল নং (${billNum}) জেনারেট করা হয়েছে।`
+          : `⚠️ Previous bill number was duplicate, automatically generated new bill number (${billNum}).`,
+        'info'
       );
-      return null as any;
     }
 
     const purDate = data.date || new Date().toISOString().split('T')[0];

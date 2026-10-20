@@ -108,6 +108,25 @@ export function numberToEnglishWords(num: number): string {
   return words.trim();
 }
 
+function renderInvoiceItemName(item: any) {
+  const name = item.name || item.productName || 'Product';
+  const strength = item.strength;
+  const dosage = item.dosage || item.dosageSchedule;
+  const manufacturer = item.manufacturer;
+  return (
+    <div>
+      <div className="font-semibold text-zinc-900 dark:text-zinc-100">{name}</div>
+      {(strength || dosage || manufacturer) && (
+        <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal flex items-center gap-1.5 flex-wrap mt-0.5">
+          {strength && <span className="bg-zinc-100 dark:bg-zinc-800 px-1 rounded font-mono font-bold">Str: {strength}</span>}
+          {dosage && <span className="bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-1 rounded">Dosage: {dosage}</span>}
+          {manufacturer && <span>By {manufacturer}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export const PrintInvoiceModal: React.FC = () => {
   const { printableDoc, closePrintModal, companySettings, language, parties, showToast } = useApp();
 
@@ -621,7 +640,7 @@ export const PrintInvoiceModal: React.FC = () => {
                   {data.items?.map((item: any, idx: number) => (
                     <tr key={idx} className="align-top">
                       <td className="py-1 pr-1">
-                        <div className="font-medium">{item.name || item.productName}</div>
+                        {renderInvoiceItemName(item)}
                       </td>
                       <td className="py-1 text-center whitespace-nowrap">{item.quantity} {item.unit || 'pcs'}</td>
                       {!isChalan && (
@@ -771,7 +790,7 @@ export const PrintInvoiceModal: React.FC = () => {
                     return (
                       <tr key={idx} className="align-top">
                         <td className="py-1 pr-1">
-                          <div className="font-bold leading-tight">{item.name || item.productName}</div>
+                          {renderInvoiceItemName(item)}
                         </td>
                         <td className="py-1 text-center whitespace-nowrap">{item.quantity}</td>
                         {!isChalan && (

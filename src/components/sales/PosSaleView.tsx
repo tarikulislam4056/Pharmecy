@@ -4,7 +4,7 @@ import { useTranslation } from '../../i18n/translations';
 import { Product, CartItem, PaymentMethod, UnitType, InstallmentFrequency, InstallmentSchedule, Quotation } from '../../types';
 import { CameraBarcodeScannerModal } from '../common/CameraBarcodeScannerModal';
 import confetti from 'canvas-confetti';
-import { isExpiredDate } from '../../utils/dateUtils';
+import { isExpiredDate, getLocalDateString } from '../../utils/dateUtils';
 import {
   Search,
   Barcode,
@@ -153,8 +153,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
   }, [trimmedInvoiceNo, saleInvoices]);
   
   const [invoiceDate, setInvoiceDate] = useState<string>(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    return getLocalDateString();
   });
 
   // Table Rows for items
@@ -350,6 +349,11 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
         taxPercent: 0,
         stock: prod?.stock || 0,
         total: it.total,
+        strength: prod?.strength,
+        dosageForm: prod?.dosageForm,
+        dosage: prod?.dosageSchedule,
+        dosageSchedule: prod?.dosageSchedule,
+        manufacturer: prod?.manufacturer,
       };
     });
     setItems(convertedRows);
@@ -585,6 +589,9 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
           batchNumber: firstValidBatch?.batchNumber || product.batchNumber,
           expDate: firstValidBatch?.expDate || product.expDate,
           strength: product.strength,
+          dosageForm: product.dosageForm,
+          dosage: product.dosageSchedule,
+          dosageSchedule: product.dosageSchedule,
           manufacturer: product.manufacturer,
         };
       });
@@ -789,6 +796,9 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
           batchNumber: firstValidBatch?.batchNumber || product.batchNumber,
           expDate: firstValidBatch?.expDate || product.expDate,
           strength: product.strength,
+          dosageForm: product.dosageForm,
+          dosage: product.dosageSchedule,
+          dosageSchedule: product.dosageSchedule,
           manufacturer: product.manufacturer,
         },
       ]);
@@ -875,6 +885,11 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
               batchId: firstValidBatch?.id,
               batchNumber: firstValidBatch?.batchNumber || match.batchNumber,
               expDate: firstValidBatch?.expDate || match.expDate,
+              strength: match.strength,
+              dosageForm: match.dosageForm,
+              dosage: match.dosageSchedule,
+              dosageSchedule: match.dosageSchedule,
+              manufacturer: match.manufacturer,
             },
           ]);
         }
@@ -934,15 +949,17 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
       return;
     }
 
-    // Check duplicate invoice number
+    // Check duplicate invoice number - Auto-correct if duplicate
+    let finalInvoiceNo = trimmedInvoiceNo;
     if (duplicateInvoice) {
+      finalInvoiceNo = getNextSaleInvoiceNumber ? getNextSaleInvoiceNumber() : `INV-2026-${Date.now().toString().slice(-4)}`;
+      setInvoiceNo(finalInvoiceNo);
       showToast(
         language === 'bn'
-          ? `আগে থেকে এই Invoice No এন্ট্রি আছে! (${duplicateInvoice.customerName} - চালান #${duplicateInvoice.invoiceNumber})। একই ইনভয়েস নং দুইবার এন্ট্রি হবে না।`
-          : `This Invoice No is already entered previously! (${duplicateInvoice.customerName} - #${duplicateInvoice.invoiceNumber}). Duplicate entry not allowed.`,
-        'error'
+          ? `⚠️ ইনভয়েস নং ডুপ্লিকেট থাকায় স্বয়ংক্রিয়ভাবে নতুন নম্বর (${finalInvoiceNo}) সেট করা হয়েছে।`
+          : `⚠️ Invoice number was duplicate, automatically updated to unique number (${finalInvoiceNo}).`,
+        'info'
       );
-      return;
     }
 
     // Validate Stock & Batch-Level Expiry for every item
@@ -1065,13 +1082,18 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
         batchId: vi.batchId,
         batchNumber: vi.batchNumber,
         expDate: vi.expDate,
+        strength: vi.strength,
+        dosageForm: vi.dosageForm,
+        dosage: vi.dosage,
+        dosageSchedule: vi.dosageSchedule,
+        manufacturer: vi.manufacturer,
       }));
 
       const emiProductNames = validItems.map(vi => `${vi.name}${vi.quantity > 1 ? ` (x${vi.quantity})` : ''}`).join(', ');
 
       // 1. Create Sale Invoice
       const newInvoice = createSaleInvoice({
-        invoiceNumber: trimmedInvoiceNo || undefined,
+        invoiceNumber: finalInvoiceNo || undefined,
         customerId: selectedCustomer.id,
         customerName: selectedCustomer.name,
         customerPhone: selectedCustomer.phone || '',
@@ -1193,12 +1215,17 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
       batchId: vi.batchId,
       batchNumber: vi.batchNumber,
       expDate: vi.expDate,
+      strength: vi.strength,
+      dosageForm: vi.dosageForm,
+      dosage: vi.dosage,
+      dosageSchedule: vi.dosageSchedule,
+      manufacturer: vi.manufacturer,
     }));
 
     const primaryPayment = paymentSplits[0] || { method: 'CASH', walletId: wallets[0]?.id || 'w-cash' };
 
     const newInvoice = createSaleInvoice({
-      invoiceNumber: trimmedInvoiceNo || undefined,
+      invoiceNumber: finalInvoiceNo || undefined,
       customerId: selectedCustomer?.id || 'walk-in',
       customerName: selectedCustomer?.name || 'Walk-in Customer',
       customerPhone: selectedCustomer?.phone || '',

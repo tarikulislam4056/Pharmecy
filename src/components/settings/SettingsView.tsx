@@ -6,6 +6,7 @@ import { PROVIDER_PRESETS, fetchServerPublicIp } from '../../utils/smsService';
 import { INVOICE_COLOR_PRESETS, INVOICE_TEMPLATE_PRESETS, getInvoiceTheme, getInvoiceTemplate } from '../../utils/invoiceTheme';
 import { DASHBOARD_COLOR_THEMES, DashboardColorTheme } from '../../utils/brandTheme';
 import { generateFullSqlDump, generateFreshCleanSqlDump, downloadSqlFile, generateApiPhpScript } from '../../utils/sqlExporter';
+import { initialCompanySettings } from '../../data/mockInitialData';
 import {
   Settings,
   Building2,
@@ -57,6 +58,7 @@ import {
   Layers,
   Pill,
   Store,
+  Keyboard,
 } from 'lucide-react';
 
 const SMS_PROVIDERS: { id: SmsProvider; name: string; nameBn: string; description: string; defaultUrl?: string; guideBn: string }[] = [
@@ -211,8 +213,18 @@ export const SettingsView: React.FC = () => {
   } = useApp();
   const { t } = useTranslation(language);
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'invoice-design' | 'sms-api' | 'sms-logs' | 'database-sql'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'invoice-design' | 'sms-api' | 'sms-logs' | 'database-sql' | 'shortcuts'>('profile');
+  const [showAddCustomProviderModal, setShowAddCustomProviderModal] = useState(false);
   const [isExportingSql, setIsExportingSql] = useState(false);
+  const [editableShortcuts, setEditableShortcuts] = useState(() => {
+    return companySettings.keyboardShortcuts || initialCompanySettings.keyboardShortcuts || [];
+  });
+
+  React.useEffect(() => {
+    if (companySettings.keyboardShortcuts && companySettings.keyboardShortcuts.length > 0) {
+      setEditableShortcuts(companySettings.keyboardShortcuts);
+    }
+  }, [companySettings.keyboardShortcuts]);
   const [apiEndpointUrl, setApiEndpointUrl] = useState(() => {
     if (companySettings.apiEndpoint && companySettings.apiEndpoint.trim()) {
       return companySettings.apiEndpoint.trim();
@@ -384,6 +396,8 @@ export const SettingsView: React.FC = () => {
   // SMS Settings State
   const [smsSettings, setSmsSettings] = useState<SmsConfig>({ ...smsConfig });
   const [showAdvancedParams, setShowAdvancedParams] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
   const [testPhone, setTestPhone] = useState('');
   const [testMessage, setTestMessage] = useState('DokanPro ERP: This is a test SMS from your store.');
   const [isSendingTest, setIsSendingTest] = useState(false);
@@ -607,7 +621,6 @@ export const SettingsView: React.FC = () => {
   };
 
   // Custom Gateway Modal State
-  const [showAddCustomProviderModal, setShowAddCustomProviderModal] = useState(false);
   const [newProv, setNewProv] = useState({
     id: '',
     name: '',
@@ -744,7 +757,7 @@ export const SettingsView: React.FC = () => {
   const selectedProviderInfo = SMS_PROVIDERS.find(p => p.id === smsSettings.provider) || SMS_PROVIDERS[0];
 
   return (
-    <div className="space-y-6 w-full pb-12">
+    <div className="p-6 space-y-6 w-full pb-12">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <div>
@@ -825,6 +838,18 @@ export const SettingsView: React.FC = () => {
             )}
           </button>
 
+          <button
+            type="button"
+            onClick={() => setActiveTab('shortcuts')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              activeTab === 'shortcuts'
+                ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Keyboard className="w-4 h-4 text-purple-500" />
+            <span>{language === 'bn' ? 'কীবোর্ড শর্টকাট' : 'Keyboard Shortcuts'}</span>
+          </button>
           <button
             type="button"
             onClick={() => setActiveTab('database-sql')}
@@ -3935,6 +3960,242 @@ npm start
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 5: KEYBOARD SHORTCUTS GUIDE & CUSTOMIZER */}
+      {/* ========================================================================= */}
+      {activeTab === 'shortcuts' && (
+        <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white p-5 sm:p-6 rounded-2xl border border-purple-900/50 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div className="p-3.5 bg-purple-600/30 border border-purple-500/40 rounded-xl shrink-0 text-purple-400">
+                <Keyboard className="w-7 h-7" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base sm:text-lg font-bold">
+                    {language === 'bn' ? 'কীবোর্ড শর্টকাট গাইড ও কাস্টমাইজেশন' : 'Keyboard Shortcuts Guide & Customizer'}
+                  </h2>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500 text-white">
+                    {language === 'bn' ? 'সম্পূর্ণ এডিটেবল' : 'Fully Editable'}
+                  </span>
+                </div>
+                <p className="text-xs text-purple-200/90 mt-1 max-w-2xl leading-relaxed">
+                  {language === 'bn'
+                    ? 'আপনার পছন্দমতো যেকোনো নেভিগেশন বা অ্যাকশনের জন্য কীবোর্ড শর্টকাট কি (Key) এবং বিবরণ পরিবর্তন, নতুন যোগ বা মুছে ফেলতে পারবেন।'
+                    : 'Customize, edit, rebind key combinations, or add new keyboard shortcuts for instant system navigation.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  const defaults = initialCompanySettings.keyboardShortcuts || [];
+                  setEditableShortcuts(JSON.parse(JSON.stringify(defaults)));
+                  updateCompanySettings({ keyboardShortcuts: defaults });
+                  showToast(
+                    language === 'bn' ? 'ডিফল্ট শর্টকাটে রিসেট করা হয়েছে!' : 'Reset to default keyboard shortcuts!',
+                    'info'
+                  );
+                }}
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{language === 'bn' ? 'ডিফল্ট রিসেট' : 'Reset Defaults'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  updateCompanySettings({ keyboardShortcuts: editableShortcuts });
+                  showToast(
+                    language === 'bn' ? 'কীবোর্ড শর্টকাট সফলভাবে সংরক্ষণ করা হয়েছে!' : 'Keyboard shortcuts saved successfully!',
+                    'success'
+                  );
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>{language === 'bn' ? 'সংরক্ষণ করুন' : 'Save Changes'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Shortcut Groups List */}
+          <div className="space-y-5">
+            {editableShortcuts.map((group, gIdx) => (
+              <div
+                key={gIdx}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs"
+              >
+                {/* Group Header */}
+                <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        {language === 'bn' ? 'ক্যাটাগরি শিরোনাম (বাংলা)' : 'Category Title (Bangla)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={group.categoryBn}
+                        onChange={(e) => {
+                          const updated = [...editableShortcuts];
+                          updated[gIdx].categoryBn = e.target.value;
+                          setEditableShortcuts(updated);
+                        }}
+                        className="w-full px-2.5 py-1.5 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        {language === 'bn' ? 'ক্যাটাগরি শিরোনাম (English)' : 'Category Title (English)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={group.categoryEn}
+                        onChange={(e) => {
+                          const updated = [...editableShortcuts];
+                          updated[gIdx].categoryEn = e.target.value;
+                          setEditableShortcuts(updated);
+                        }}
+                        className="w-full px-2.5 py-1.5 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = [...editableShortcuts];
+                      updated[gIdx].shortcuts.push({
+                        keys: ['Ctrl', 'H'],
+                        labelBn: 'নতুন শর্টকাট',
+                        labelEn: 'New Shortcut',
+                      });
+                      setEditableShortcuts(updated);
+                    }}
+                    className="self-end sm:self-center px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-bold border border-purple-200 dark:border-purple-800/60 flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{language === 'bn' ? 'শর্টকাট যোগ করুন' : 'Add Shortcut'}</span>
+                  </button>
+                </div>
+
+                {/* Shortcuts Table */}
+                <div className="p-4 overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-semibold text-[11px]">
+                        <th className="pb-2.5 w-44">{language === 'bn' ? 'কীবোর্ড কি (কমা দিয়ে লিখুন)' : 'Keys (comma separated)'}</th>
+                        <th className="pb-2.5">{language === 'bn' ? 'বিবরণ (বাংলা)' : 'Label (Bangla)'}</th>
+                        <th className="pb-2.5">{language === 'bn' ? 'বিবরণ (English)' : 'Label (English)'}</th>
+                        <th className="pb-2.5 w-24 text-center">{language === 'bn' ? 'প্রিভিউ' : 'Preview'}</th>
+                        <th className="pb-2.5 w-12 text-center">{language === 'bn' ? 'মুছুন' : 'Action'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                      {group.shortcuts.map((sc, sIdx) => (
+                        <tr key={sIdx} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors">
+                          <td className="py-2.5 pr-2">
+                            <input
+                              type="text"
+                              value={sc.keys.join(', ')}
+                              onChange={(e) => {
+                                const updated = [...editableShortcuts];
+                                updated[gIdx].shortcuts[sIdx].keys = e.target.value
+                                  .split(',')
+                                  .map((k) => k.trim())
+                                  .filter(Boolean);
+                                setEditableShortcuts(updated);
+                              }}
+                              placeholder="e.g. Ctrl, N"
+                              className="w-full px-2 py-1 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md focus:border-purple-500"
+                            />
+                          </td>
+                          <td className="py-2.5 pr-2">
+                            <input
+                              type="text"
+                              value={sc.labelBn}
+                              onChange={(e) => {
+                                const updated = [...editableShortcuts];
+                                updated[gIdx].shortcuts[sIdx].labelBn = e.target.value;
+                                setEditableShortcuts(updated);
+                              }}
+                              className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md"
+                            />
+                          </td>
+                          <td className="py-2.5 pr-2">
+                            <input
+                              type="text"
+                              value={sc.labelEn}
+                              onChange={(e) => {
+                                const updated = [...editableShortcuts];
+                                updated[gIdx].shortcuts[sIdx].labelEn = e.target.value;
+                                setEditableShortcuts(updated);
+                              }}
+                              className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md"
+                            />
+                          </td>
+                          <td className="py-2.5 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              {sc.keys.map((k, kIdx) => (
+                                <kbd
+                                  key={kIdx}
+                                  className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-purple-600 dark:text-purple-400 rounded border border-slate-300 dark:border-slate-700 shadow-2xs"
+                                >
+                                  {k}
+                                </kbd>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-2.5 text-center">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...editableShortcuts];
+                                updated[gIdx].shortcuts.splice(sIdx, 1);
+                                setEditableShortcuts(updated);
+                              }}
+                              className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors cursor-pointer"
+                              title="Delete Shortcut"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom Save Bar */}
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-4">
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {language === 'bn'
+                ? '💡 শর্টকাট পরিবর্তন শেষে "সংরক্ষণ করুন" বাটনে ক্লিক করুন।'
+                : '💡 Click "Save Changes" to apply keyboard shortcuts across your workspace.'}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                updateCompanySettings({ keyboardShortcuts: editableShortcuts });
+                showToast(
+                  language === 'bn' ? 'কীবোর্ড শর্টকাট সফলভাবে সংরক্ষণ করা হয়েছে!' : 'Keyboard shortcuts saved successfully!',
+                  'success'
+                );
+              }}
+              className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2 cursor-pointer shrink-0"
+            >
+              <Save className="w-4 h-4" />
+              <span>{language === 'bn' ? 'পরিবর্তন সংরক্ষণ করুন' : 'Save Changes'}</span>
+            </button>
           </div>
         </div>
       )}

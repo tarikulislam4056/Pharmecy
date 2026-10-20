@@ -4,6 +4,7 @@ import { useTranslation } from '../../i18n/translations';
 import { Product, PaymentMethod, UnitType, PurchaseInvoice } from '../../types';
 import { CameraBarcodeScannerModal } from '../common/CameraBarcodeScannerModal';
 import confetti from 'canvas-confetti';
+import { getLocalDateString, normalizeDateToISO } from '../../utils/dateUtils';
 import {
   Search,
   Barcode,
@@ -110,9 +111,8 @@ export const PurchaseEntryView: React.FC<PurchaseEntryViewProps> = ({
   }, [trimmedInvoiceNo, purchaseInvoices, initialData]);
   
   const [invoiceDate, setInvoiceDate] = useState<string>(() => {
-    if (initialData?.date) return initialData.date;
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    if (initialData?.date) return normalizeDateToISO(initialData.date) || initialData.date;
+    return getLocalDateString();
   });
 
   // Table Rows for items

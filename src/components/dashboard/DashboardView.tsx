@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation } from '../../i18n/translations';
 import { getCustomerTotalDue } from '../../utils/dueHelpers';
@@ -31,16 +31,19 @@ import {
   AlertTriangle,
   Bell,
   ShieldAlert,
+  ShoppingCart,
+  CalendarRange,
+  X,
 } from 'lucide-react';
 import { VoucherSearchModal } from '../common/VoucherSearchModal';
 import { ExpiryAlertModal } from '../common/ExpiryAlertModal';
 import { DemandForecastWidget } from './DemandForecastWidget';
-import { ExpiryDashboardWidget } from './ExpiryDashboardWidget';
 import { isTabAllowed, hasPermission } from '../../utils/permissions';
 import {
   getExpiringProductsWithinDays,
   triggerExpiryPushNotifications,
 } from '../../utils/expiryNotificationService';
+import { getLocalDateString, normalizeDateToISO } from '../../utils/dateUtils';
 import { ViewTab } from '../../types';
 
 interface DashboardViewProps {
@@ -52,7 +55,7 @@ interface DashboardViewProps {
   onOpenKeyboardShortcuts?: () => void;
 }
 
-type FilterPeriod = 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'thisYear' | 'all';
+type FilterPeriod = 'today' | 'yesterday' | 'last7' | 'last30' | 'thisMonth' | 'thisYear' | 'custom' | 'all';
 
 // Reusable SVG Vertical Mini-Bar Sparkline Chart matching the exact visual in the screenshot
 const SparklineMiniBars: React.FC<{
@@ -133,7 +136,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [dashboardSearchQuery, setDashboardSearchQuery] = useState('');
   const [isVoucherSearchOpen, setIsVoucherSearchOpen] = useState(false);
   const [isExpiryModalOpen, setIsExpiryModalOpen] = useState(false);
-  const [showPurchaseSales, setShowPurchaseSales] = useState(false);
+  const [purchaseSalesViewPeriod, setPurchaseSalesViewPeriod] = useState<'all' | 'period'>('period');
+
+  // Custom date range states
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+
+  // Auto-switch Purchase & Sales card view whenever the user changes Date Filter
+  useEffect(() => {
+    if (activeFilter === 'all') {
+      setPurchaseSalesViewPeriod('all');
+    } else {
+      setPurchaseSalesViewPeriod('period');
+    }
+  }, [activeFilter]);
 
   // Products expiring within 5 days (User requirement: 5 days prior alert in admin panel)
   const expiring5DaysItems = useMemo(() => {
@@ -165,72 +181,96 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
   };
 
-  // Date Filter Calculations
-  const todayStr = new Date().toISOString().split('T')[0];
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  // Date Filter Calculations (Strict Local Timezone to avoid UTC offset issues)
+  const today = new Date();
+  const todayStr = getLocalDateString(today);
+
+  const yesterdayDate = new Date(today);
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterdayStr = getLocalDateString(yesterdayDate);
+
+  const last7StartDate = new Date(today);
+  last7StartDate.setDate(last7StartDate.getDate() - 6);
+  const last7StartStr = getLocalDateString(last7StartDate);
+
+  const last30StartDate = new Date(today);
+  last30StartDate.setDate(last30StartDate.getDate() - 29);
+  const last30StartStr = getLocalDateString(last30StartDate);
+
+  const thisMonthStartStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const thisMonthEndStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
+
+  const thisYearStartStr = `${today.getFullYear()}-01-01`;
+  const thisYearEndStr = `${today.getFullYear()}-12-31`;
+
+  // Universal Date matching function: safely normalizes string, ISO timestamps, or dates
+  const isDateInPeriod = (dateInput?: string | null): boolean => {
+    if (!dateInput) return false;
+    if (activeFilter === 'all') return true;
+
+    const dStr = normalizeDateToISO(dateInput);
+    if (!dStr) return false;
+
+    if (activeFilter === 'today') {
+      return dStr === todayStr;
+    }
+    if (activeFilter === 'yesterday') {
+      return dStr === yesterdayStr;
+    }
+    if (activeFilter === 'last7') {
+      return dStr >= last7StartStr && dStr <= todayStr;
+    }
+    if (activeFilter === 'last30') {
+      return dStr >= last30StartStr && dStr <= todayStr;
+    }
+    if (activeFilter === 'thisMonth') {
+      return dStr >= thisMonthStartStr && dStr <= thisMonthEndStr;
+    }
+    if (activeFilter === 'thisYear') {
+      return dStr >= thisYearStartStr && dStr <= thisYearEndStr;
+    }
+    if (activeFilter === 'custom') {
+      if (customStartDate && dStr < customStartDate) return false;
+      if (customEndDate && dStr > customEndDate) return false;
+      return true;
+    }
+    return true;
+  };
+
+  // Human-readable active period label
+  const getPeriodLabel = (): string => {
+    if (activeFilter === 'today') return language === 'bn' ? 'আজকের' : 'Today';
+    if (activeFilter === 'yesterday') return language === 'bn' ? 'গতকালের' : 'Yesterday';
+    if (activeFilter === 'last7') return language === 'bn' ? 'গত ৭ দিন' : 'Last 7 Days';
+    if (activeFilter === 'last30') return language === 'bn' ? 'গত ৩০ দিন' : 'Last 30 Days';
+    if (activeFilter === 'thisMonth') return language === 'bn' ? 'এই মাস' : 'This Month';
+    if (activeFilter === 'thisYear') return language === 'bn' ? 'এই বছর' : 'This Year';
+    if (activeFilter === 'custom') {
+      if (customStartDate && customEndDate) {
+        return `${customStartDate} হতে ${customEndDate}`;
+      }
+      return language === 'bn' ? 'কাস্টম তারিখ' : 'Custom Range';
+    }
+    return language === 'bn' ? 'সব সময়' : 'All Time';
+  };
 
   // Filtered sales and transactions based on chosen period
   const filteredSales = useMemo(() => {
-    if (activeFilter === 'today') {
-      return saleInvoices.filter(s => s.date === todayStr);
-    }
-    if (activeFilter === 'yesterday') {
-      return saleInvoices.filter(s => s.date === yesterdayStr);
-    }
-    if (activeFilter === 'last7') {
-      const d = new Date();
-      d.setDate(d.getDate() - 7);
-      return saleInvoices.filter(s => new Date(s.date) >= d);
-    }
-    return saleInvoices;
-  }, [saleInvoices, activeFilter, todayStr, yesterdayStr]);
+    return saleInvoices.filter(s => isDateInPeriod(s.date));
+  }, [saleInvoices, activeFilter, todayStr, yesterdayStr, last7StartStr, last30StartStr, thisMonthStartStr, thisMonthEndStr, thisYearStartStr, thisYearEndStr, customStartDate, customEndDate]);
 
   const filteredPurchases = useMemo(() => {
-    if (activeFilter === 'today') {
-      return purchaseInvoices.filter(p => p.date === todayStr);
-    }
-    if (activeFilter === 'yesterday') {
-      return purchaseInvoices.filter(p => p.date === yesterdayStr);
-    }
-    if (activeFilter === 'last7') {
-      const d = new Date();
-      d.setDate(d.getDate() - 7);
-      return purchaseInvoices.filter(p => new Date(p.date) >= d);
-    }
-    return purchaseInvoices;
-  }, [purchaseInvoices, activeFilter, todayStr, yesterdayStr]);
+    return purchaseInvoices.filter(p => isDateInPeriod(p.date));
+  }, [purchaseInvoices, activeFilter, todayStr, yesterdayStr, last7StartStr, last30StartStr, thisMonthStartStr, thisMonthEndStr, thisYearStartStr, thisYearEndStr, customStartDate, customEndDate]);
 
   const filteredExpenses = useMemo(() => {
-    if (activeFilter === 'today') {
-      return expenseVouchers.filter(e => e.date === todayStr);
-    }
-    if (activeFilter === 'yesterday') {
-      return expenseVouchers.filter(e => e.date === yesterdayStr);
-    }
-    if (activeFilter === 'last7') {
-      const d = new Date();
-      d.setDate(d.getDate() - 7);
-      return expenseVouchers.filter(e => new Date(e.date) >= d);
-    }
-    return expenseVouchers;
-  }, [expenseVouchers, activeFilter, todayStr, yesterdayStr]);
+    return expenseVouchers.filter(e => isDateInPeriod(e.date));
+  }, [expenseVouchers, activeFilter, todayStr, yesterdayStr, last7StartStr, last30StartStr, thisMonthStartStr, thisMonthEndStr, thisYearStartStr, thisYearEndStr, customStartDate, customEndDate]);
 
   const filteredDayBook = useMemo(() => {
-    if (activeFilter === 'today') {
-      return dayBookEntries.filter(e => e.date === todayStr);
-    }
-    if (activeFilter === 'yesterday') {
-      return dayBookEntries.filter(e => e.date === yesterdayStr);
-    }
-    if (activeFilter === 'last7') {
-      const d = new Date();
-      d.setDate(d.getDate() - 7);
-      return dayBookEntries.filter(e => new Date(e.date) >= d);
-    }
-    return dayBookEntries;
-  }, [dayBookEntries, activeFilter, todayStr, yesterdayStr]);
+    return dayBookEntries.filter(e => isDateInPeriod(e.date));
+  }, [dayBookEntries, activeFilter, todayStr, yesterdayStr, last7StartStr, last30StartStr, thisMonthStartStr, thisMonthEndStr, thisYearStartStr, thisYearEndStr, customStartDate, customEndDate]);
 
   // Cash In calculation for the filtered period (Actual liquid money received)
   const cashInAmount = useMemo(() => {
@@ -276,6 +316,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return products.reduce((acc, p) => acc + Number(p.stock || 0), 0);
   }, [products]);
   const totalItemsCount = products.length;
+
+  // Total All-Time & Period Purchases Valuation (কত টাকার পণ্য ক্রয় করা হয়েছে)
+  const totalAllPurchases = useMemo(() => {
+    return purchaseInvoices.reduce((sum, p) => sum + (p.grandTotal ?? (p as any).total ?? p.subtotal ?? 0), 0);
+  }, [purchaseInvoices]);
+
+  const totalFilteredPurchases = useMemo(() => {
+    return filteredPurchases.reduce((sum, p) => sum + (p.grandTotal ?? (p as any).total ?? p.subtotal ?? 0), 0);
+  }, [filteredPurchases]);
+
+  // Total All-Time & Period Sales Valuation (কত টাকার পণ্য বিক্রয় করা হয়েছে)
+  const totalAllSales = useMemo(() => {
+    return saleInvoices.reduce((sum, s) => sum + (s.grandTotal ?? (s as any).total ?? s.subtotal ?? 0), 0);
+  }, [saleInvoices]);
+
+  const totalFilteredSales = useMemo(() => {
+    return filteredSales.reduce((sum, s) => sum + (s.grandTotal ?? (s as any).total ?? s.subtotal ?? 0), 0);
+  }, [filteredSales]);
 
   // Total Profit (Based on Sales)
   const totalProfit = useMemo(() => {
@@ -353,7 +411,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const totalParties = customerCount + supplierCount;
   const customerPercentage = totalParties > 0 ? Math.round((customerCount / totalParties) * 100) : 0;
 
-  // Best Selling & Lowest Selling Products logic
+  // Best Selling & Lowest Selling Products logic (calculated from active filtered period sales)
   const productSalesMap = useMemo(() => {
     const map: { [prodId: string]: { name: string; qty: number; revenue: number; stock: number } } = {};
     
@@ -362,7 +420,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       map[p.id] = { name: p.name, qty: 0, revenue: 0, stock: p.stock };
     });
 
-    saleInvoices.forEach(inv => {
+    filteredSales.forEach(inv => {
       inv.items.forEach(item => {
         if (map[item.productId]) {
           map[item.productId].qty += item.quantity;
@@ -379,7 +437,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     });
 
     return Object.entries(map).map(([id, data]) => ({ id, ...data }));
-  }, [products, saleInvoices]);
+  }, [products, filteredSales]);
 
   const bestSellingProducts = useMemo(() => {
     return [...productSalesMap].sort((a, b) => b.qty - a.qty).slice(0, 3);
@@ -465,115 +523,197 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             onClick={() => setIsFilterOpen(!isFilterOpen)}
             className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-800 text-slate-800 dark:text-slate-100 rounded-xl text-base sm:text-lg font-bold shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-all cursor-pointer"
           >
-            <Filter className="w-4 h-4 text-slate-500" />
+            <Filter className="w-4 h-4 text-[#8271FE]" />
             <span className="capitalize">
-              {activeFilter === 'today' && (language === 'bn' ? 'আজকের' : 'Filters')}
-              {activeFilter === 'yesterday' && 'Yesterday'}
-              {activeFilter === 'last7' && 'Last 7 Days'}
-              {activeFilter === 'thisMonth' && 'This Month'}
-              {activeFilter === 'all' && 'All Time'}
+              {getPeriodLabel()}
             </span>
           </button>
 
-          {/* Filter Dropdown */}
+          {/* Filter Dropdown Modal / Popover */}
           {isFilterOpen && (
-            <div className="absolute right-0 mt-1.5 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1 z-30 text-sm">
-              <div className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                Select Time Period
+            <>
+              {/* Semi-transparent backdrop to close on outside click */}
+              <div
+                className="fixed inset-0 z-40 bg-black/20 dark:bg-black/40 backdrop-blur-[0.5px]"
+                onClick={() => setIsFilterOpen(false)}
+              />
+              <div className="absolute right-0 top-full mt-2 w-[310px] sm:w-[340px] max-w-[calc(100vw-20px)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 z-50 overflow-hidden text-sm animate-in fade-in zoom-in-95 duration-150">
+                {/* Header */}
+                <div className="px-3.5 py-2.5 bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <CalendarRange className="w-4 h-4 text-[#8271FE]" />
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-800 dark:text-white">
+                      {language === 'bn' ? 'সময়কাল ফিল্টার' : 'Filter by Period'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {activeFilter !== 'today' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveFilter('today');
+                          setIsFilterOpen(false);
+                        }}
+                        className="text-[11px] font-bold text-[#8271FE] hover:underline cursor-pointer"
+                      >
+                        {language === 'bn' ? 'আজকে রিসেট' : 'Reset'}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsFilterOpen(false)}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded cursor-pointer transition-colors"
+                      title="Close"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-2.5 max-h-[75vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+                  {/* Preset Options Grid - All 8 options immediately visible without scrolling */}
+                  <div className="grid grid-cols-2 gap-1.5 mb-2.5">
+                    {[
+                      { id: 'today', label: language === 'bn' ? 'আজকের' : 'Today' },
+                      { id: 'yesterday', label: language === 'bn' ? 'গতকালের' : 'Yesterday' },
+                      { id: 'last7', label: language === 'bn' ? 'গত ৭ দিন' : 'Last 7 Days' },
+                      { id: 'last30', label: language === 'bn' ? 'গত ৩০ দিন' : 'Last 30 Days' },
+                      { id: 'thisMonth', label: language === 'bn' ? 'এই মাস' : 'This Month' },
+                      { id: 'thisYear', label: language === 'bn' ? 'এই বছর' : 'This Year' },
+                      { id: 'all', label: language === 'bn' ? 'সব সময়' : 'All Time' },
+                      { id: 'custom', label: language === 'bn' ? 'কাস্টম তারিখ' : 'Custom Range' },
+                    ].map(f => {
+                      const isSelected = activeFilter === f.id;
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => {
+                            if (f.id === 'custom') {
+                              setActiveFilter('custom');
+                              if (!customStartDate && !customEndDate) {
+                                setCustomStartDate(todayStr);
+                                setCustomEndDate(todayStr);
+                              }
+                            } else {
+                              setActiveFilter(f.id as FilterPeriod);
+                              setIsFilterOpen(false);
+                            }
+                          }}
+                          className={`px-2.5 py-2 rounded-xl text-left font-bold text-xs flex items-center justify-between transition-all cursor-pointer border ${
+                            isSelected
+                              ? 'bg-purple-50 dark:bg-purple-950/60 text-[#8271FE] dark:text-purple-300 border-[#8271FE]/40 shadow-xs'
+                              : 'bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/70 dark:border-slate-800'
+                          }`}
+                        >
+                          <span className="whitespace-nowrap">{f.label}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-[#8271FE] shrink-0 ml-1" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Date Range Picker */}
+                  <div className={`p-2.5 rounded-xl border transition-all ${
+                    activeFilter === 'custom'
+                      ? 'bg-purple-50/40 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/60'
+                      : 'bg-slate-50/50 dark:bg-slate-800/30 border-slate-200/60 dark:border-slate-800'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                        <span>📅 {language === 'bn' ? 'কাস্টম তারিখ নির্বাচন' : 'Custom Date Range'}</span>
+                      </span>
+                      {activeFilter === 'custom' && (
+                        <span className="text-[10px] font-extrabold px-1.5 py-0.2 bg-[#8271FE] text-white rounded">
+                          Active
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-1">
+                            {language === 'bn' ? 'হতে (From):' : 'From:'}
+                          </label>
+                          <input
+                            type="date"
+                            value={customStartDate}
+                            onChange={e => {
+                              setCustomStartDate(e.target.value);
+                              setActiveFilter('custom');
+                            }}
+                            className="w-full text-xs px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-[#8271FE]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-1">
+                            {language === 'bn' ? 'পর্যন্ত (To):' : 'To:'}
+                          </label>
+                          <input
+                            type="date"
+                            value={customEndDate}
+                            onChange={e => {
+                              setCustomEndDate(e.target.value);
+                              setActiveFilter('custom');
+                            }}
+                            className="w-full text-xs px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-[#8271FE]"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!customStartDate && !customEndDate) {
+                            setCustomStartDate(todayStr);
+                            setCustomEndDate(todayStr);
+                          }
+                          setActiveFilter('custom');
+                          setIsFilterOpen(false);
+                        }}
+                        className="w-full py-2 bg-[#8271FE] hover:bg-[#7260FD] text-white text-xs font-extrabold rounded-xl transition-all shadow-xs cursor-pointer text-center"
+                      >
+                        {language === 'bn' ? 'তারিখ প্রয়োগ করুন' : 'Apply Date Filter'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              {[
-                { id: 'today', label: 'Today' },
-                { id: 'yesterday', label: 'Yesterday' },
-                { id: 'last7', label: 'Last 7 Days' },
-                { id: 'thisMonth', label: 'This Month' },
-                { id: 'all', label: 'All Time' },
-              ].map(f => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveFilter(f.id as FilterPeriod);
-                    setIsFilterOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
-                    activeFilter === f.id ? 'font-bold text-[#8271FE] bg-purple-50/50 dark:bg-purple-950/30' : 'text-slate-700 dark:text-slate-300'
-                  }`}
-                >
-                  <span>{f.label}</span>
-                  {activeFilter === f.id && <Check className="w-3.5 h-3.5 text-[#8271FE]" />}
-                </button>
-              ))}
-            </div>
+            </>
           )}
         </div>
       </div>
 
-      {/* 1.5 5-Day Expiry Push Notification Alert Banner (Admin Panel Requirement) */}
-      {hasPermission(currentUser, 'PRODUCTS_INVENTORY') && expiring5DaysItems.length > 0 && (
-        <div className="bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-transparent border border-amber-300 dark:border-amber-800/80 rounded-2xl p-3.5 sm:p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-500/20">
-              <Bell className="w-5 h-5 animate-pulse" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  {language === 'bn' ? '⚠️ জরুরি মেয়াদ সতর্কতা: ৫ দিনের মধ্যে মেয়াদ শেষ হচ্ছে!' : '⚠️ Urgent Expiry Alert: Items Expiring Within 5 Days!'}
-                </h4>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white font-mono">
-                  {expiring5DaysItems.length}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
-                {language === 'bn'
-                  ? `'${expiring5DaysItems[0].productName}' সহ ${expiring5DaysItems.length}টি পণ্যের মেয়াদ আগামী ৫ দিন বা তার চেয়ে কম সময়ে শেষ হচ্ছে। অ্যাডমিন প্যানেলে পুশ নোটিফিকেশন চেক করুন।`
-                  : `'${expiring5DaysItems[0].productName}' and ${expiring5DaysItems.length - 1} more items expire in 5 days or less. Check push notification center.`}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setIsExpiryModalOpen(true)}
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
-            >
-              <Bell className="w-3.5 h-3.5" />
-              <span>{language === 'bn' ? 'পুশ অ্যালার্ট ও তালিকা দেখুন' : 'View Alerts & Push'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSafeNavigate('batch-inventory')}
-              className="inline-flex items-center justify-center px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-            >
-              <span>{language === 'bn' ? 'ব্যাচ ইনভেন্টরি' : 'Batch Inventory'}</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 5-Day Expiry Banner removed as notifications are handled in notification center / bell */}
 
       {/* 2. Top 4 Stat Metric Cards (Row 1) - 2x2 on Mobile, 4 Cols on Large Screen */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 items-stretch">
         
         {/* 1. Cash In */}
         <div
           onClick={() => handleSafeNavigate('daybook')}
-          className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5"
+          className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between gap-2 h-full"
         >
-          <div className="flex flex-col justify-between space-y-1 min-w-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-              <ArrowDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <ArrowDown className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <span className="text-sm text-slate-500 dark:text-slate-400 font-bold block truncate">
-                {language === 'bn' ? 'ক্যাশ ইন' : 'Cash In'}
-              </span>
-              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight block truncate mt-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold whitespace-nowrap">
+                  {language === 'bn' ? 'ক্যাশ ইন' : 'Cash In'}
+                </span>
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/50 whitespace-nowrap">
+                  {getPeriodLabel()}
+                </span>
+              </div>
+              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight block whitespace-nowrap mt-0.5">
                 {formatCurrency(cashInAmount)}
               </span>
             </div>
           </div>
-          <div className="hidden sm:block self-end pb-0.5 shrink-0">
+          <div className="hidden sm:block shrink-0">
             <SparklineMiniBars color="green" heights={[25, 45, 30, 60, 50, 75, 40, 85, 95]} />
           </div>
         </div>
@@ -581,22 +721,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* 2. Cash Out */}
         <div
           onClick={() => handleSafeNavigate('daybook')}
-          className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5"
+          className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between gap-2 h-full"
         >
-          <div className="flex flex-col justify-between space-y-1 min-w-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-500 dark:text-sky-400 flex items-center justify-center shrink-0">
-              <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-500 dark:text-sky-400 flex items-center justify-center shrink-0">
+              <ArrowUp className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <span className="text-sm text-slate-500 dark:text-slate-400 font-bold block truncate">
-                {language === 'bn' ? 'ক্যাশ আউট' : 'Cash Out'}
-              </span>
-              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight block truncate mt-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold whitespace-nowrap">
+                  {language === 'bn' ? 'ক্যাশ আউট' : 'Cash Out'}
+                </span>
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200/50 dark:border-sky-900/50 whitespace-nowrap">
+                  {getPeriodLabel()}
+                </span>
+              </div>
+              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight block whitespace-nowrap mt-0.5">
                 {formatCurrency(cashOutAmount)}
               </span>
             </div>
           </div>
-          <div className="hidden sm:block self-end pb-0.5 shrink-0">
+          <div className="hidden sm:block shrink-0">
             <SparklineMiniBars color="blue" heights={[15, 30, 20, 55, 40, 65, 35, 70, 80]} />
           </div>
         </div>
@@ -604,15 +749,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* 3. Total Receivable */}
         <div
           onClick={() => handleSafeNavigate('due-list')}
-          className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5"
+          className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between gap-2 h-full"
         >
-          <div className="flex flex-col justify-between space-y-1 min-w-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
-              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <Calendar className="w-4 h-4" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1">
-                <span className="text-sm text-slate-500 dark:text-slate-400 font-bold truncate">
+                <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold whitespace-nowrap">
                   {language === 'bn' ? 'মোট পাওনা' : 'Total Receivable'}
                 </span>
                 <span
@@ -622,12 +767,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <Info className="w-3 h-3" />
                 </span>
               </div>
-              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight block truncate mt-0.5">
+              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight block whitespace-nowrap mt-0.5">
                 {formatCurrency(totalReceivables)}
               </span>
             </div>
           </div>
-          <div className="hidden sm:block self-end pb-0.5 shrink-0">
+          <div className="hidden sm:block shrink-0">
             <SparklineMiniBars color="coral" heights={[40, 60, 35, 80, 55, 90, 70, 85, 95]} />
           </div>
         </div>
@@ -635,15 +780,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* 4. Total Payable */}
         <div
           onClick={() => handleSafeNavigate('due-list')}
-          className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5"
+          className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between gap-2 h-full"
         >
-          <div className="flex flex-col justify-between space-y-1 min-w-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-500 dark:text-amber-400 flex items-center justify-center shrink-0">
-              <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-500 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <DollarSign className="w-4 h-4" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1">
-                <span className="text-sm text-slate-500 dark:text-slate-400 font-bold truncate">
+                <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold whitespace-nowrap">
                   {language === 'bn' ? 'মোট দেনা' : 'Total Payable'}
                 </span>
                 <span
@@ -653,31 +798,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <Info className="w-3 h-3" />
                 </span>
               </div>
-              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight block truncate mt-0.5">
+              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight block whitespace-nowrap mt-0.5">
                 {formatCurrency(totalPayables)}
               </span>
             </div>
           </div>
-          <div className="hidden sm:block self-end pb-0.5 shrink-0">
+          <div className="hidden sm:block shrink-0">
             <SparklineMiniBars color="yellow" heights={[30, 45, 25, 70, 50, 60, 40, 75, 80]} />
           </div>
         </div>
 
       </div>
 
-      {/* Expiry Tracking Widget */}
-      <ExpiryDashboardWidget products={products} language={language} />
-
-      {/* 3. Row 2: Cash In Hand, Total Stock Value, Total Profit, & Total Expense */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+      {/* 3. Row 2: Cash In Hand, Total Stock Value, Purchase & Sales, Total Profit, & Total Expense */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5 items-stretch">
         
         {/* Cash In Hand (Purple Hero Card matching exact design) */}
-        <div className="lg:col-span-3 bg-[#8572FF] rounded-xl p-3 sm:p-3.5 text-white shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[100px]">
+        <div className="bg-[#8572FF] rounded-xl p-3 sm:p-3.5 text-white shadow-xs relative overflow-hidden flex flex-col justify-between h-full min-h-[120px]">
           {/* Top Title & Visibility Toggle */}
           <div>
-            <div className="flex items-center gap-1.5">
-              <h3 className="text-base sm:text-lg font-extrabold tracking-tight text-white">
-                {language === 'bn' ? 'হাতে নগদ (Cash In Hand)' : 'Cash In Hand'}
+            <div className="flex items-center justify-between">
+              <h3 className="text-base sm:text-lg font-extrabold tracking-tight text-white whitespace-nowrap">
+                {language === 'bn' ? 'হাতে নগদ' : 'Cash In Hand'}
               </h3>
               <button
                 type="button"
@@ -688,16 +830,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {showBalance ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
               </button>
             </div>
-            <p className="text-sm text-white/90 font-semibold mt-0.5">
+            <p className="text-xs sm:text-sm text-white/90 font-semibold mt-0.5 whitespace-nowrap">
               {language === 'bn' ? 'ক্যাশ ও ওয়ালেট ব্যালেন্স' : 'Total wallet balance'}
             </p>
           </div>
 
           {/* Amount Box (Crisp White Pill Container) */}
-          <div className="mt-2">
+          <div className="mt-2 z-10">
             <div className="inline-flex items-center px-3 py-1 bg-white rounded-lg shadow-2xs">
-              <span className="text-lg sm:text-xl font-black text-[#8572FF] font-mono tracking-tight">
+              <span className="text-lg sm:text-xl font-black text-[#8572FF] font-mono tracking-tight whitespace-nowrap">
                 {showBalance ? formatCurrency(totalCashInHand) : '৳ ••••••••'}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center gap-1">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/20 text-white border border-white/30 whitespace-nowrap">
+                {language === 'bn' ? 'বর্তমান ব্যালেন্স' : 'Current Balance'}
               </span>
             </div>
           </div>
@@ -708,13 +855,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Total Stock Value */}
-        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-3 sm:p-3.5 shadow-2xs relative overflow-hidden flex flex-col justify-between min-h-[100px]">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-3 sm:p-3.5 shadow-2xs relative overflow-hidden flex flex-col justify-between h-full min-h-[120px]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-500 border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-500 border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-center shrink-0">
                 <Package className="w-3.5 h-3.5" />
               </div>
-              <h3 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white">
+              <h3 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white whitespace-nowrap">
                 {language === 'bn' ? 'স্টক ভ্যালু' : 'Stock Value'}
               </h3>
             </div>
@@ -722,7 +869,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               type="button"
               onClick={() => handleSafeNavigate('products-list')}
-              className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-0.5 cursor-pointer transition-colors"
+              className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-0.5 cursor-pointer transition-colors shrink-0"
             >
               <span>{language === 'bn' ? 'সব দেখুন' : 'View'}</span>
               <ChevronRight className="w-3 h-3" />
@@ -730,47 +877,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="mt-1.5 z-10">
-            <span className="text-sm text-slate-500 dark:text-slate-400 font-bold block">
+            <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold block whitespace-nowrap">
               {language === 'bn' ? 'স্টকের কেনা মূল্য' : 'Total Inventory Value'}
             </span>
-            <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight block">
+            <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight block whitespace-nowrap">
               {formatCurrency(totalStockValue)}
             </span>
-            <div className="mt-1 flex items-center gap-1 flex-wrap">
-              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-1.5 py-0.2 rounded border border-indigo-100 dark:border-indigo-800/50">
+            <div className="mt-2 flex items-center gap-1 flex-wrap">
+              <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800/50 whitespace-nowrap">
                 {totalItemsCount} {language === 'bn' ? 'টি পণ্য' : 'Products'}
               </span>
-              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-1.5 py-0.2 rounded border border-indigo-100 dark:border-indigo-800/50">
+              <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800/50 whitespace-nowrap">
                 {totalStockQty.toLocaleString()} {language === 'bn' ? 'টি পিস' : 'Units'}
               </span>
-            </div>
-            
-            {/* New Button to Toggle Purchase/Sales Details */}
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={() => setShowPurchaseSales(!showPurchaseSales)}
-                className="w-full py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
-              >
-                 {showPurchaseSales ? (language === 'bn' ? 'তথ্য লুকাও' : 'Hide Details') : (language === 'bn' ? 'ক্রয় ও বিক্রয় দেখুন' : 'View Purchase & Sales')}
-              </button>
-
-              {showPurchaseSales && (
-                <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] animate-in fade-in slide-in-from-top-1">
-                  <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded border border-slate-100 dark:border-slate-700">
-                    <span className="text-slate-500 block">{language === 'bn' ? 'মোট ক্রয়' : 'Total Purchase'}</span>
-                    <span className="font-bold font-mono text-slate-800 dark:text-slate-200">
-                       {formatCurrency(purchaseInvoices.reduce((sum, p) => sum + (p.total || 0), 0))}
-                    </span>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded border border-slate-100 dark:border-slate-700">
-                    <span className="text-slate-500 block">{language === 'bn' ? 'মোট বিক্রয়' : 'Total Sales'}</span>
-                    <span className="font-bold font-mono text-slate-800 dark:text-slate-200">
-                       {formatCurrency(saleInvoices.reduce((sum, s) => sum + (s.total || 0), 0))}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -780,14 +899,94 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
+        {/* Total Purchases & Sales Card (ক্রয় ও বিক্রয়) */}
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-3 sm:p-3.5 shadow-2xs relative overflow-hidden flex flex-col justify-between h-full min-h-[120px]">
+          <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-800/80">
+            <div className="flex items-center gap-1.5">
+              <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center shrink-0">
+                <ShoppingCart className="w-3.5 h-3.5" />
+              </div>
+              <h3 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white whitespace-nowrap">
+                {language === 'bn' ? 'ক্রয় ও বিক্রয়' : 'Purchase & Sales'}
+              </h3>
+            </div>
+
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60 whitespace-nowrap shrink-0">
+              {getPeriodLabel()}
+            </span>
+          </div>
+
+          <div className="mt-2 space-y-1.5 z-10">
+            {/* Purchase Row */}
+            <div className="flex items-center justify-between gap-1.5 py-0.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
+                <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                  {language === 'bn' ? 'মোট ক্রয়:' : 'Purchase:'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-xs sm:text-sm font-black font-mono text-sky-600 dark:text-sky-400 whitespace-nowrap">
+                  {formatCurrency(totalFilteredPurchases)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleSafeNavigate('purchase-list')}
+                  className="text-[10px] font-bold text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 flex items-center cursor-pointer ml-0.5"
+                  title={language === 'bn' ? 'ক্রয় তালিকা দেখুন' : 'View Purchases'}
+                >
+                  <span>({filteredPurchases.length})</span>
+                  <ChevronRight className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Sales Row */}
+            <div className="flex items-center justify-between gap-1.5 py-0.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                  {language === 'bn' ? 'মোট বিক্রয়:' : 'Sales:'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-xs sm:text-sm font-black font-mono text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                  {formatCurrency(totalFilteredSales)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleSafeNavigate('sales-list')}
+                  className="text-[10px] font-bold text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center cursor-pointer ml-0.5"
+                  title={language === 'bn' ? 'বিক্রয় তালিকা দেখুন' : 'View Sales'}
+                >
+                  <span>({filteredSales.length})</span>
+                  <ChevronRight className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-2 pt-1 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 z-10">
+            <span className="font-semibold">{language === 'bn' ? 'মোট চালান:' : 'Invoices:'}</span>
+            <span className="font-bold font-mono text-slate-700 dark:text-slate-300">
+              {filteredPurchases.length + filteredSales.length} {language === 'bn' ? 'টি' : 'total'}
+            </span>
+          </div>
+
+          <div className="absolute -right-8 -bottom-8 pointer-events-none opacity-40 dark:opacity-10">
+            <div className="w-28 h-28 rounded-full border-8 border-blue-50 dark:border-blue-900/20" />
+            <div className="w-16 h-16 rounded-full border-8 border-blue-50 dark:border-blue-900/20 absolute inset-0 m-auto" />
+          </div>
+        </div>
+
         {/* Total Profit */}
-        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-3 sm:p-3.5 shadow-2xs relative overflow-hidden flex flex-col justify-between min-h-[100px]">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-3 sm:p-3.5 shadow-2xs relative overflow-hidden flex flex-col justify-between h-full min-h-[120px]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-500 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-500 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center shrink-0">
                 <TrendingUp className="w-3.5 h-3.5" />
               </div>
-              <h3 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white">
+              <h3 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white whitespace-nowrap">
                 {language === 'bn' ? 'মোট লাভ' : 'Total Profit'}
               </h3>
             </div>
@@ -795,7 +994,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               type="button"
               onClick={() => handleSafeNavigate('reports')}
-              className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-0.5 cursor-pointer transition-colors"
+              className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-0.5 cursor-pointer transition-colors shrink-0"
             >
               <span>{language === 'bn' ? 'রিপোর্ট' : 'Reports'}</span>
               <ChevronRight className="w-3 h-3" />
@@ -803,12 +1002,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="mt-1.5 z-10">
-            <span className="text-sm text-slate-500 dark:text-slate-400 font-bold block">
-              {language === 'bn' ? 'বিক্রয় থেকে আয়' : 'Profit from Sales'}
+            <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold block whitespace-nowrap">
+              {language === 'bn' ? 'বিক্রয় থেকে নিট লাভ' : 'Net Profit from Sales'}
             </span>
-            <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight block">
+            <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight block whitespace-nowrap">
               {formatCurrency(totalProfit)}
             </span>
+            <div className="mt-2 flex items-center gap-1">
+              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/40 px-1.5 py-0.5 rounded border border-emerald-100 dark:border-emerald-800/50 whitespace-nowrap">
+                {getPeriodLabel()}
+              </span>
+            </div>
           </div>
 
           <div className="absolute -right-8 -bottom-8 pointer-events-none opacity-40 dark:opacity-10">
@@ -818,14 +1022,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Total Expense Card */}
-        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-3 sm:p-3.5 shadow-2xs relative overflow-hidden flex flex-col justify-between min-h-[100px]">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-3 sm:p-3.5 shadow-2xs relative overflow-hidden flex flex-col justify-between h-full min-h-[120px]">
           {/* Header with Orange Icon & View All Link */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 rounded-lg bg-orange-50 dark:bg-orange-950/50 text-orange-500 border border-orange-100 dark:border-orange-900/40 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-orange-50 dark:bg-orange-950/50 text-orange-500 border border-orange-100 dark:border-orange-900/40 flex items-center justify-center shrink-0">
                 <Receipt className="w-3.5 h-3.5" />
               </div>
-              <h3 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white">
+              <h3 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white whitespace-nowrap">
                 {language === 'bn' ? 'মোট খরচ' : 'Total Expense'}
               </h3>
             </div>
@@ -833,7 +1037,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               type="button"
               onClick={() => handleSafeNavigate('expenses')}
-              className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-[#8572FF] dark:hover:text-[#8572FF] flex items-center gap-0.5 cursor-pointer transition-colors"
+              className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-[#8572FF] dark:hover:text-[#8572FF] flex items-center gap-0.5 cursor-pointer transition-colors shrink-0"
             >
               <span>{language === 'bn' ? 'সব দেখুন' : 'View All'}</span>
               <ChevronRight className="w-3 h-3" />
@@ -841,16 +1045,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Amount Content */}
-          <div className="mt-1.5">
-            <span className="text-sm text-slate-500 dark:text-slate-400 font-bold block">
-              {language === 'bn' ? 'মোট খরচ' : 'Total Expense'}
+          <div className="mt-1.5 z-10">
+            <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold block whitespace-nowrap">
+              {language === 'bn' ? 'দোকানের মোট খরচ' : 'Total Store Expense'}
             </span>
-            <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight block">
+            <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight block whitespace-nowrap">
               {formatCurrency(totalExpenseAmount)}
             </span>
+            <div className="mt-2 flex items-center gap-1">
+              <span className="text-[10px] font-bold text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/40 px-1.5 py-0.5 rounded border border-orange-100 dark:border-orange-800/50 whitespace-nowrap">
+                {getPeriodLabel()}
+              </span>
+            </div>
           </div>
 
-          {/* Background Concentric Rings Watermark */}
           <div className="absolute -right-8 -bottom-8 pointer-events-none opacity-40 dark:opacity-10">
             <div className="w-28 h-28 rounded-full border-8 border-slate-100 dark:border-slate-800" />
             <div className="w-16 h-16 rounded-full border-8 border-slate-100 dark:border-slate-800 absolute inset-0 m-auto" />
