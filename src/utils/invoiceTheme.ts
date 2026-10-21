@@ -2,6 +2,14 @@ import { CompanySettings, InvoiceColorTheme, InvoiceColorPalette, InvoiceTemplat
 
 export const INVOICE_TEMPLATE_PRESETS: InvoiceTemplateDef[] = [
   {
+    id: 'AROGGA_PHARMACY',
+    name: 'Pharmacy Style (ফার্মেসি স্টাইল)',
+    nameBn: 'ফার্মেসি ইনভয়েস লেআউট',
+    description: 'Clean medical pharmacy invoice layout with brand header, bill-from & billed-to cards, and detailed item table with MRP & Discount columns.',
+    descriptionBn: 'ফার্মেসির আদলে তৈরি পরিচ্ছন্ন মেডিকেল ইনভয়েস, বিলিং কার্ড ও MRP/Discount সহ কলাম।',
+    badge: 'Pharmacy',
+  },
+  {
     id: 'MODERN_MINIMAL',
     name: 'Modern Minimal (মডার্ন মিনিমাল)',
     nameBn: 'মডার্ন মিনিমাল ও ক্লিন',

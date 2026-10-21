@@ -33,6 +33,8 @@ interface CameraBarcodeScannerModalProps {
   onClose: () => void;
   onBarcodeDetected: (barcode: string) => void;
   products?: Product[];
+  mode?: 'sale' | 'purchase' | 'product-entry' | 'search' | 'general';
+  onAddNewProduct?: (barcode: string) => void;
 }
 
 export interface ScannedItemRecord {
@@ -65,6 +67,8 @@ export const CameraBarcodeScannerModal: React.FC<CameraBarcodeScannerModalProps>
   onClose,
   onBarcodeDetected,
   products = [],
+  mode = 'general',
+  onAddNewProduct,
 }) => {
   const { language, formatCurrency } = useApp();
 
@@ -192,6 +196,13 @@ export const CameraBarcodeScannerModal: React.FC<CameraBarcodeScannerModalProps>
         }
       }
 
+      // Mobile haptic vibration feedback
+      try {
+        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+          navigator.vibrate([100]);
+        }
+      } catch {}
+
       const record: ScannedItemRecord = {
         id: `scan-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         code: trimmed,
@@ -209,17 +220,39 @@ export const CameraBarcodeScannerModal: React.FC<CameraBarcodeScannerModalProps>
         message,
       });
 
-      // Notify parent handler to add to cart / apply code
-      onBarcodeDetected(trimmed);
+      setScanHistory(prev => [record, ...prev.slice(0, 20)]);
+      setLastScannedProduct({
+        product: match,
+        code: trimmed,
+        status,
+        message,
+      });
 
-      // If single scan mode, close modal
-      if (!continuousMode && status === 'SUCCESS') {
-        setTimeout(() => {
-          onClose();
-        }, 500);
+      if (status === 'SUCCESS') {
+        // Notify parent handler to add to cart / purchase item
+        onBarcodeDetected(trimmed);
+
+        // If single scan mode, close modal
+        if (!continuousMode) {
+          setTimeout(() => {
+            onClose();
+          }, 450);
+        }
+      } else if (status === 'NOT_FOUND') {
+        // In single scan mode or product-entry/search mode, immediately notify parent
+        if (!continuousMode || mode === 'product-entry' || mode === 'search') {
+          if (onAddNewProduct) {
+            onAddNewProduct(trimmed);
+          } else {
+            onBarcodeDetected(trimmed);
+          }
+          setTimeout(() => {
+            onClose();
+          }, 350);
+        }
       }
     },
-    [continuousMode, language, lastScannedCode, onBarcodeDetected, onClose, playSound, products]
+    [continuousMode, language, lastScannedCode, mode, onAddNewProduct, onBarcodeDetected, onClose, playSound, products]
   );
 
   // Stop Scanner safely
@@ -252,58 +285,139 @@ export const CameraBarcodeScannerModal: React.FC<CameraBarcodeScannerModalProps>
 
         // Check if reader element exists in DOM
         const elem = document.getElementById(readerElementId);
-        if (!elem) return;
+        if (!elem) {
+          console.warn('Reader element not yet mounted in DOM');
+          return;
+        }
 
         // Create Html5Qrcode with hardware-accelerated BarcodeDetector & full format coverage
         const html5QrCode = new Html5Qrcode(readerElementId, {
           useBarCodeDetectorIfSupported: true,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true,
+          },
           formatsToSupport: supportedBarcodeFormats,
           verbose: false,
         });
         scannerRef.current = html5QrCode;
 
-        const isMobile = window.innerWidth < 768;
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
         const config: Html5QrcodeCameraScanConfig = {
-          fps: 15, // Optimal 15 fps provides reliable processing without CPU throttle on mobile
+          fps: 24, // 24 fps provides ultra-responsive scanning on mobile phones
           qrbox: (viewfinderWidth, viewfinderHeight) => {
-            // Flexible responsive viewfinder allowing horizontal & 2D code alignments
-            const width = Math.min(Math.floor(viewfinderWidth * (isMobile ? 0.92 : 0.86)), 460);
-            const height = Math.min(Math.floor(viewfinderHeight * (isMobile ? 0.60 : 0.52)), 250);
+            // Flexible responsive viewfinder allowing horizontal 1D barcodes and 2D QR codes
+            const width = Math.min(Math.floor(viewfinderWidth * (isMobile ? 0.94 : 0.88)), 480);
+            const height = Math.min(Math.floor(viewfinderHeight * (isMobile ? 0.65 : 0.52)), 260);
             return { width: Math.max(width, 240), height: Math.max(height, 130) };
           },
           aspectRatio: isMobile ? 1.333333 : 1.777778,
           disableFlip: false,
         };
 
-        await html5QrCode.start(
-          cameraSource as any,
-          config,
-          (decodedText) => {
-            processBarcode(decodedText);
-          },
-          () => {
-            // Ignore per-frame non-matching cycles
-          }
-        );
-
-        setIsScanning(true);
-
-        // Check capabilities (Flashlight Torch & Hardware Zoom)
+        let started = false;
         try {
-          const track = (html5QrCode as any).getRunningTrack();
-          if (track && typeof track.getCapabilities === 'function') {
-            const capabilities = track.getCapabilities();
-            if (capabilities.torch) {
-              setTorchSupported(true);
+          await html5QrCode.start(
+            cameraSource as any,
+            config,
+            (decodedText) => {
+              processBarcode(decodedText);
+            },
+            () => {
+              // Ignore per-frame non-matching cycles
             }
-            if (capabilities.zoom) {
-              setZoomSupported(true);
-              setMinZoom(capabilities.zoom.min || 1);
-              setMaxZoom(capabilities.zoom.max || 4);
+          );
+          started = true;
+        } catch (firstErr: any) {
+          console.warn('Primary camera start failed with target constraint, attempting smart fallback...', firstErr);
+          try {
+            await html5QrCode.stop().catch(() => {});
+            html5QrCode.clear();
+          } catch {}
+
+          const fallbackScanner = new Html5Qrcode(readerElementId, {
+            useBarCodeDetectorIfSupported: true,
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true,
+            },
+            formatsToSupport: supportedBarcodeFormats,
+            verbose: false,
+          });
+          scannerRef.current = fallbackScanner;
+
+          // Try retrieving devices and picking rear camera or first available camera
+          const devices = await Html5Qrcode.getCameras().catch(() => []);
+          if (devices && devices.length > 0) {
+            setCameras(devices);
+            const backCam = devices.find(d => /back|rear|environment|main|primary|0/i.test(d.label)) || devices[devices.length - 1];
+            setSelectedCameraId(backCam.id);
+            await fallbackScanner.start(
+              backCam.id,
+              config,
+              (decodedText) => {
+                processBarcode(decodedText);
+              },
+              () => {}
+            );
+            started = true;
+          } else {
+            // Fallback to environment facingMode or user
+            try {
+              await fallbackScanner.start(
+                { facingMode: 'environment' } as any,
+                config,
+                (decodedText) => {
+                  processBarcode(decodedText);
+                },
+                () => {}
+              );
+              started = true;
+            } catch {
+              await fallbackScanner.start(
+                { facingMode: 'user' } as any,
+                config,
+                (decodedText) => {
+                  processBarcode(decodedText);
+                },
+                () => {}
+              );
+              started = true;
             }
           }
-        } catch {
-          // Ignore capability check failures
+        }
+
+        if (started) {
+          setIsScanning(true);
+
+          // Ensure video element plays inline and fills container cleanly on mobile iOS & Android
+          try {
+            const videoElem = elem.querySelector('video');
+            if (videoElem) {
+              videoElem.setAttribute('playsinline', 'true');
+              videoElem.setAttribute('webkit-playsinline', 'true');
+              videoElem.style.width = '100%';
+              videoElem.style.height = '100%';
+              videoElem.style.objectFit = 'cover';
+            }
+          } catch {}
+
+          // Check capabilities (Flashlight Torch & Hardware Zoom)
+          try {
+            const currentScanner = scannerRef.current || html5QrCode;
+            const track = (currentScanner as any).getRunningTrack();
+            if (track && typeof track.getCapabilities === 'function') {
+              const capabilities = track.getCapabilities();
+              if (capabilities.torch) {
+                setTorchSupported(true);
+              }
+              if (capabilities.zoom) {
+                setZoomSupported(true);
+                setMinZoom(capabilities.zoom.min || 1);
+                setMaxZoom(capabilities.zoom.max || 4);
+              }
+            }
+          } catch {
+            // Ignore capability check failures
+          }
         }
       } catch (err: any) {
         setIsScanning(false);
@@ -325,8 +439,8 @@ export const CameraBarcodeScannerModal: React.FC<CameraBarcodeScannerModalProps>
         ) {
           setErrorMsg(
             language === 'bn'
-              ? 'ক্যামেরা পারমিশন ডিনাইড হয়েছে। আপনার ব্রাউজারের অ্যাড্রেস বার বা সাইট সেটিংসে ক্যামেরা পারমিশন Allow করুন।'
-              : 'Camera permission denied. Please allow camera access in your browser address bar or site permissions.'
+              ? 'ক্যামেরা ব্যবহারের অনুমতি (Permission) প্রয়োজন। আপনার ব্রাউজারের অ্যাড্রেস বারের ক্যামেরা আইকনে ক্লিক করে "Allow" করে দিন।'
+              : 'Camera permission denied. Please click the camera icon in your browser address bar and choose "Allow".'
           );
         } else {
           setErrorMsg(
@@ -361,26 +475,26 @@ export const CameraBarcodeScannerModal: React.FC<CameraBarcodeScannerModalProps>
       return;
     }
 
-    // On mobile devices, default to facingMode: 'environment' (rear camera with autofocus)
-    const cameraSource = selectedCameraId ? selectedCameraId : { facingMode: facingMode };
-
-    startScanner(cameraSource).then(() => {
+    // Small delay ensures DOM container element is fully painted
+    const timer = setTimeout(() => {
       if (!isMounted) return;
-      // Enumerate available cameras once stream has started
-      Html5Qrcode.getCameras()
-        .then(devices => {
-          if (!isMounted) return;
-          if (devices && devices.length > 0) {
-            setCameras(devices);
-          }
-        })
-        .catch(() => {
-          // ignore enumeration error
-        });
-    });
+      const cameraSource = selectedCameraId ? selectedCameraId : { facingMode: facingMode };
+      startScanner(cameraSource).then(() => {
+        if (!isMounted) return;
+        Html5Qrcode.getCameras()
+          .then(devices => {
+            if (!isMounted) return;
+            if (devices && devices.length > 0) {
+              setCameras(devices);
+            }
+          })
+          .catch(() => {});
+      });
+    }, 80);
 
     return () => {
       isMounted = false;
+      clearTimeout(timer);
       stopScanner();
     };
   }, [isOpen, selectedCameraId, facingMode, startScanner, stopScanner]);
@@ -482,12 +596,16 @@ export const CameraBarcodeScannerModal: React.FC<CameraBarcodeScannerModalProps>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm sm:text-base leading-tight">
-                  {language === 'bn' ? 'ক্যামেরা বারকোড স্ক্যানার' : 'Camera Barcode Scanner'}
+                  {mode === 'sale'
+                    ? (language === 'bn' ? 'ক্যামেরা বিক্রয় বারকোড স্ক্যানার' : 'POS Camera Barcode Scanner')
+                    : mode === 'purchase'
+                    ? (language === 'bn' ? 'ক্যামেরা ক্রয় বারকোড স্ক্যানার' : 'Purchase Camera Barcode Scanner')
+                    : (language === 'bn' ? 'ক্যামেরা বারকোড স্ক্যানার' : 'Camera Barcode Scanner')}
                 </h3>
                 {continuousMode ? (
                   <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                     <Flame className="w-3 h-3 text-emerald-400" />
-                    Continuous POS
+                    {mode === 'purchase' ? 'Multi Purchase' : 'Continuous POS'}
                   </span>
                 ) : (
                   <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/40 rounded-full text-[10px] font-bold">
@@ -496,9 +614,11 @@ export const CameraBarcodeScannerModal: React.FC<CameraBarcodeScannerModalProps>
                 )}
               </div>
               <p className="text-[11px] text-indigo-200/80">
-                {language === 'bn'
-                  ? 'ফোনের ক্যামেরা পণ্যের বারকোড বা কিউআর কোডের দিকে তাক করুন'
-                  : 'Point camera at product barcode or QR code'}
+                {mode === 'purchase'
+                  ? (language === 'bn' ? 'যেকোনো ফোনের ক্যামেরা বারকোডে তাক করুন — সরাসরি ক্রয় চালানে যুক্ত হবে' : 'Point mobile camera at product barcode — auto-adds to purchase list')
+                  : mode === 'sale'
+                  ? (language === 'bn' ? 'যেকোনো ফোনের ক্যামেরা বারকোডে তাক করুন — সরাসরি ক্যাশ মেমোতে যুক্ত হবে' : 'Point mobile camera at product barcode — auto-adds to sale bill')
+                  : (language === 'bn' ? 'যেকোনো ফোনের ক্যামেরা পণ্যের বারকোড বা কিউআর কোডের দিকে তাক করুন' : 'Point camera at product barcode or QR code')}
               </p>
             </div>
           </div>
@@ -550,6 +670,25 @@ export const CameraBarcodeScannerModal: React.FC<CameraBarcodeScannerModalProps>
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
           {/* Camera Viewport Container */}
           <div className="relative bg-black rounded-2xl overflow-hidden shadow-inner aspect-[4/3] max-h-[360px] flex items-center justify-center border border-slate-800">
+            <style>{`
+              #pos-camera-barcode-reader {
+                width: 100% !important;
+                height: 100% !important;
+                position: relative;
+              }
+              #pos-camera-barcode-reader video {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: cover !important;
+                border-radius: 1rem;
+              }
+              #pos-camera-barcode-reader img {
+                display: none !important;
+              }
+              #pos-camera-barcode-reader #pos-camera-barcode-reader__scan_region {
+                min-height: 100% !important;
+              }
+            `}</style>
             {/* The Html5Qrcode mounting div */}
             <div id={readerElementId} className="w-full h-full object-cover" />
 
@@ -790,7 +929,31 @@ export const CameraBarcodeScannerModal: React.FC<CameraBarcodeScannerModalProps>
                       </div>
                     ) : (
                       <div className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-                        {lastScannedProduct.message}
+                        <div>{lastScannedProduct.message}</div>
+                        {lastScannedProduct.status === 'NOT_FOUND' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              stopScanner();
+                              onClose();
+                              if (onAddNewProduct) {
+                                onAddNewProduct(lastScannedProduct.code);
+                              } else {
+                                onBarcodeDetected(lastScannedProduct.code);
+                              }
+                            }}
+                            className="mt-2 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>
+                              {mode === 'purchase'
+                                ? (language === 'bn' ? '+ নতুন পণ্য বানিয়ে ক্রয়ে যোগ করুন' : '+ Create & Add to Purchase')
+                                : mode === 'sale'
+                                ? (language === 'bn' ? '+ নতুন পণ্য বানিয়ে বিক্রয়ে যোগ করুন' : '+ Create & Add to Sale')
+                                : (language === 'bn' ? '+ নতুন পণ্য তৈরি করুন' : '+ Create New Product')}
+                            </span>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

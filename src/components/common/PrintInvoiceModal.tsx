@@ -108,8 +108,11 @@ export function numberToEnglishWords(num: number): string {
   return words.trim();
 }
 
-function renderInvoiceItemName(item: any) {
+function renderInvoiceItemName(item: any, isPharmacy = false) {
   const name = item.name || item.productName || 'Product';
+  if (isPharmacy) {
+    return <div className="font-semibold text-zinc-900">{name}</div>;
+  }
   const strength = item.strength;
   const dosage = item.dosage || item.dosageSchedule;
   const manufacturer = item.manufacturer;
@@ -192,7 +195,9 @@ export const PrintInvoiceModal: React.FC = () => {
   }, [printableDoc?.autoDownloadPdf]);
 
   const invoiceTheme = overrideTheme || getInvoiceTheme(companySettings);
-  const activeTemplateDef = INVOICE_TEMPLATE_PRESETS.find(t => t.id === (overrideTemplate || companySettings.invoiceTemplate || 'MODERN_MINIMAL')) || INVOICE_TEMPLATE_PRESETS[0];
+  const isPharmacyMode = companySettings.businessModule === 'pharmacy';
+  const defaultTpl = isPharmacyMode ? 'AROGGA_PHARMACY' : 'MODERN_MINIMAL';
+  const activeTemplateDef = INVOICE_TEMPLATE_PRESETS.find(t => t.id === (overrideTemplate || companySettings.invoiceTemplate || defaultTpl)) || INVOICE_TEMPLATE_PRESETS[0];
   const activeTemplateId = activeTemplateDef.id;
 
   if (!printableDoc) return null;
@@ -877,6 +882,180 @@ export const PrintInvoiceModal: React.FC = () => {
           {printFormat === 'A4' && (type === 'INVOICE_A4' || type === 'PURCHASE_VOUCHER' || type === 'POS_80MM') && (
             <div className={`printable-invoice w-full ${printOrientation === 'LANDSCAPE' ? 'max-w-[1120px] min-h-[794px]' : 'max-w-[850px] min-h-[1080px]'} bg-white text-black p-8 md:p-12 shadow-xl border border-zinc-200 rounded-sm font-sans flex flex-col justify-between print:shadow-none print:border-none print:p-8 print:w-full print:max-w-none print:min-h-screen`}>
               
+              {/* ========================================== */}
+              {/* TEMPLATE 0: AROGGA PHARMACY STYLE         */}
+              {/* ========================================== */}
+              {activeTemplateId === 'AROGGA_PHARMACY' && (
+                <div className="flex flex-col justify-between h-full min-h-[980px] text-xs font-sans">
+                  <div>
+                    {/* Top Header: Logo left, INVOICE right */}
+                    <div className="flex justify-between items-start pb-4 border-b border-zinc-300">
+                      <div>
+                        {companySettings.logoUrl ? (
+                          <img src={companySettings.logoUrl} alt="Logo" className="h-12 w-auto object-contain shrink-0" />
+                        ) : (
+                          <div className="flex items-center gap-1 font-bold font-serif text-2xl tracking-tight">
+                            <span className="text-emerald-700">ar</span>
+                            <span className="relative inline-flex items-center justify-center w-5 h-5 bg-red-600 text-white rounded-full text-xs font-black">+</span>
+                            <span className="text-emerald-700">gga</span>
+                          </div>
+                        )}
+                        <p className="text-[11px] text-zinc-500 font-sans mt-0.5">
+                          {companySettings.slogan || 'For better health'}
+                        </p>
+                      </div>
+
+                      <div className="text-right">
+                        <h2 className="text-2xl font-serif font-bold uppercase tracking-widest text-zinc-900">INVOICE</h2>
+                      </div>
+                    </div>
+
+                    {/* Invoice No & Dates Bar */}
+                    <div className="grid grid-cols-2 gap-4 py-3 border-b border-zinc-200 text-xs font-medium text-zinc-800">
+                      <div>
+                        <span className="text-zinc-500">Invoice No:</span>{' '}
+                        <span className="font-bold text-black">{data.invoiceNumber || data.voucherNo || data.billNumber || '5680283'}</span>
+                      </div>
+                      <div className="text-right flex justify-end gap-6">
+                        <div>
+                          <span className="text-zinc-500">Order Date:</span>{' '}
+                          <span className="font-semibold text-black">{data.date || printToday}</span>
+                        </div>
+                        <div>
+                          <span className="text-zinc-500">Invoice Date:</span>{' '}
+                          <span className="font-semibold text-black">{data.date || printToday}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bill From & Billed To / Deliver To Grid */}
+                    <div className="grid grid-cols-2 gap-6 my-4 border-b border-zinc-200 pb-4 text-xs">
+                      <div>
+                        <h4 className="font-bold text-zinc-900 uppercase tracking-wide mb-1 text-[11px]">Bill From</h4>
+                        <div className="font-bold text-black">{companySettings.name || 'Arogga Limited'}</div>
+                        <div className="text-zinc-700">{companySettings.phone || '09610016778'}</div>
+                        <div className="text-blue-600 underline">{companySettings.website || 'www.arogga.com'}</div>
+                        <div className="text-zinc-700 leading-snug mt-0.5">{companySettings.address || 'D/15-1, Road-36, Block-D, Section-10, Mirpur, Dhaka-1216'}</div>
+                        <div className="text-zinc-800 font-semibold mt-1">BIN Number: {companySettings.taxNumber || '004687255-0202'}</div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="font-bold text-zinc-900 uppercase tracking-wide mb-0.5 text-[11px]">Billed To</h4>
+                          <div className="font-bold text-black">
+                            {data.customerName || data.supplierName || 'MD. Tarikul Islam'}, {data.customerPhone || data.supplierPhone || '+8801312305225'}
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-zinc-900 uppercase tracking-wide mb-0.5 text-[11px]">Deliver To</h4>
+                          <div className="font-bold text-black">
+                            {data.customerName || data.supplierName || 'MD TARIKUL ISLAM'}, {data.customerPhone || data.supplierPhone || '+8801312305225'}
+                          </div>
+                          <div className="text-zinc-700 leading-snug mt-0.5">
+                            {data.customerAddress || data.supplierAddress || 'modhya boyra namapara, Bhatsala Sheprur Sadar, Sherpur, Mymensingh'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Products Table */}
+                    <div className="mb-6 overflow-hidden border border-zinc-300">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-zinc-100 text-zinc-900 border-b border-zinc-300 font-bold">
+                            <th className="py-2.5 px-3 text-center w-12 border-r border-zinc-300">SL No.</th>
+                            <th className="py-2.5 px-3 border-r border-zinc-300">Products</th>
+                            <th className="py-2.5 px-3 text-center w-36 border-r border-zinc-300">Quantity</th>
+                            <th className="py-2.5 px-3 text-right w-24 border-r border-zinc-300">MRP</th>
+                            <th className="py-2.5 px-3 text-right w-24 border-r border-zinc-300">Discount</th>
+                            <th className="py-2.5 px-3 text-right w-28">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-black divide-y divide-zinc-200">
+                          {data.items && data.items.length > 0 ? (
+                            data.items.map((item: any, idx: number) => {
+                              const unitPrice = item.unitPrice || item.purchasePrice || item.price || 0;
+                              const disc = item.discount || 0;
+                              const total = item.total || ((unitPrice - disc) * (item.quantity || 1));
+                              return (
+                                <tr key={idx} className={idx % 2 === 1 ? 'bg-zinc-50/60' : 'bg-white'}>
+                                  <td className="py-2.5 px-3 text-center text-zinc-700 border-r border-zinc-200">{idx + 1}</td>
+                                  <td className="py-2.5 px-3 border-r border-zinc-200 font-medium text-black">
+                                    {renderInvoiceItemName(item, true)}
+                                  </td>
+                                  <td className="py-2.5 px-3 text-center text-zinc-800 border-r border-zinc-200 whitespace-nowrap">
+                                    {isPharmacyMode
+                                      ? `${item.quantity} ${item.unit || 'Pcs'} ${item.dosageForm || item.form || ''}`.trim()
+                                      : `${item.quantity} ${item.unit || 'pcs'} ${item.packSize ? `(${item.packSize})` : ''}`}
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right border-r border-zinc-200 whitespace-nowrap">
+                                    {Number(unitPrice).toFixed(2)}
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right border-r border-zinc-200 whitespace-nowrap text-rose-700">
+                                    {disc > 0 ? Number(disc * (item.quantity || 1)).toFixed(2) : '0'}
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right font-medium whitespace-nowrap">
+                                    {Number(total).toFixed(2)}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          ) : (
+                            <tr>
+                              <td className="py-2.5 px-3 text-center border-r border-zinc-200">1</td>
+                              <td className="py-2.5 px-3 border-r border-zinc-200 font-medium">Orsaline (SMC)</td>
+                              <td className="py-2.5 px-3 text-center border-r border-zinc-200">10 x Sachets</td>
+                              <td className="py-2.5 px-3 text-right border-r border-zinc-200">60.00</td>
+                              <td className="py-2.5 px-3 text-right border-r border-zinc-200 text-rose-700">7.20</td>
+                              <td className="py-2.5 px-3 text-right">52.80</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Summary & Totals Bottom-Right Table */}
+                    <div className="flex justify-end mb-6">
+                      <div className="w-full max-w-[340px] border border-zinc-300 text-xs">
+                        <div className="flex justify-between items-center px-4 py-2 border-b border-zinc-200 bg-zinc-50">
+                          <span className="text-zinc-700">Subtotal</span>
+                          <span className="font-bold text-black">{Number(data.subtotal || grandTotal).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center px-4 py-2 border-b border-zinc-200">
+                          <span className="text-zinc-700">Discount applied</span>
+                          <span className="text-rose-700 font-medium">- {Number(data.discount || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center px-4 py-2 border-b border-zinc-200">
+                          <span className="text-zinc-700">Estimated Delivery</span>
+                          <span className="text-black">{Number(data.deliveryCharge || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center px-4 py-2 bg-zinc-100 font-bold text-sm text-black">
+                          <span>Amount Payable</span>
+                          <span>
+                            {Number(grandTotal).toFixed(2)} {data.paidAmount > 0 || (data.dueAmount ?? 0) <= 0 ? '(Paid)' : '(Due)'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Signatures & Footer */}
+                  <div className="mt-16">
+                    <div className="flex justify-between items-end text-xs text-black mb-8">
+                      <div className="text-center w-48">
+                        <div className="h-10" />
+                        <div className="border-t border-zinc-400 pt-1 font-medium">Customer Signature</div>
+                      </div>
+                      {renderAuthorizedSignature('Authorized Signature', 'center', 'w-48')}
+                    </div>
+                    <div className="pt-4 border-t border-zinc-300 flex justify-between items-center text-[10px] text-zinc-500">
+                      <div>This is a computer generated invoice.</div>
+                      <div>Page 1 of 1</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* ========================================== */}
               {/* TEMPLATE 1: MODERN MINIMAL                */}
               {/* ========================================== */}

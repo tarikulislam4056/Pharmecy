@@ -77,8 +77,19 @@ export const PurchaseEntryView: React.FC<PurchaseEntryViewProps> = ({
     openPrintModal,
     showToast,
     setActiveTab,
+    addProduct,
   } = useApp();
   const { t } = useTranslation(language);
+
+  // Quick Add Unknown Barcode Product State
+  const [quickBarcodeData, setQuickBarcodeData] = useState<{
+    barcode: string;
+    name: string;
+    purchasePrice: number;
+    salesPrice: number;
+    unit: UnitType;
+    categoryId: string;
+  } | null>(null);
 
   // Top Controls: Cash vs Credit Toggle
   const [purchaseMode, setPurchaseMode] = useState<'CASH' | 'CREDIT'>(initialData?.dueAmount ? 'CREDIT' : 'CASH');
@@ -506,43 +517,69 @@ export const PurchaseEntryView: React.FC<PurchaseEntryViewProps> = ({
   // Barcode scanner auto add
   const handleBarcodeScanned = (barcodeVal: string) => {
     if (!barcodeVal.trim()) return;
+    const cleanCode = barcodeVal.trim();
     const match = products.find(
-      p => p.barcode === barcodeVal.trim() || p.sku.toLowerCase() === barcodeVal.trim().toLowerCase()
+      p => p.barcode === cleanCode || p.sku.toLowerCase() === cleanCode.toLowerCase()
     );
     if (match) {
-      const existingIdx = items.findIndex(i => i.productId === match.id);
-      if (existingIdx >= 0) {
-        handleItemChange(items[existingIdx].id, 'quantity', items[existingIdx].quantity + 1);
-        showToast(`Added 1 more "${match.name}"`, 'info');
-      } else {
-        const emptyRow = items.find(i => !i.productId);
-        if (emptyRow) {
-          handleSelectProductForRow(emptyRow.id, match);
-        } else {
-          const newRowId = `row-${Date.now()}`;
-          setItems(prev => [
-            ...prev,
-            {
-              id: newRowId,
-              productId: match.id,
-              name: match.name,
-              barcode: match.barcode,
-              unit: match.unit,
-              quantity: 1,
-              purchasePrice: match.purchasePrice,
-              discount: 0,
-              discountType: 'flat',
-              taxPercent: 0,
-              stock: match.stock,
-              total: match.purchasePrice,
-            },
-          ]);
-        }
-        showToast(`Scanned "${match.name}"`, 'success');
-      }
+      handleQuickAddProduct(match);
+      showToast(
+        language === 'bn' ? `"${match.name}" ক্রয় তালিকায় যোগ হয়েছে!` : `Added "${match.name}" to purchase!`,
+        'success'
+      );
     } else {
-      showToast(language === 'bn' ? 'বারকোড মিল পাওয়া যায়নি!' : 'No product found for barcode!', 'error');
+      setIsCameraScannerOpen(false);
+      // Open Quick Product Creation Modal with this scanned barcode
+      setQuickBarcodeData({
+        barcode: cleanCode,
+        name: '',
+        purchasePrice: 0,
+        salesPrice: 0,
+        unit: 'Pcs',
+        categoryId: categories[0]?.id || '',
+      });
+      showToast(
+        language === 'bn'
+          ? `বারকোড: "${cleanCode}" পাওয়া যায়নি। নতুন পণ্য হিসেবে তথ্য দিন।`
+          : `Barcode "${cleanCode}" not in database. Enter details to add.`,
+        'info'
+      );
     }
+  };
+
+  const handleSaveQuickBarcodeProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickBarcodeData || !quickBarcodeData.name.trim()) {
+      showToast(language === 'bn' ? 'পণ্যের নাম লিখুন!' : 'Please enter product name!', 'warning');
+      return;
+    }
+
+    const cat = categories.find(c => c.id === quickBarcodeData.categoryId);
+    const newProd = addProduct({
+      name: quickBarcodeData.name.trim(),
+      nameBn: quickBarcodeData.name.trim(),
+      barcode: quickBarcodeData.barcode.trim(),
+      sku: quickBarcodeData.barcode.trim() || `SKU-${Date.now().toString().slice(-4)}`,
+      unit: quickBarcodeData.unit || 'Pcs',
+      purchasePrice: Number(quickBarcodeData.purchasePrice) || 0,
+      salesPrice: Number(quickBarcodeData.salesPrice) || Number(quickBarcodeData.purchasePrice) || 0,
+      stock: 0,
+      reorderLevel: 5,
+      minStockAlert: 5,
+      discount: 0,
+      discountType: 'flat',
+      categoryId: quickBarcodeData.categoryId || (categories[0]?.id || 'cat-general'),
+      categoryName: cat?.name || 'General',
+    });
+
+    handleQuickAddProduct(newProd);
+    setQuickBarcodeData(null);
+    showToast(
+      language === 'bn'
+        ? `"${newProd.name}" নতুন পণ্য তৈরি হয়েছে এবং ক্রয় চালানে যুক্ত হয়েছে!`
+        : `Created "${newProd.name}" and added to purchase!`,
+      'success'
+    );
   };
 
   // Reset form
@@ -1802,12 +1839,163 @@ export const PurchaseEntryView: React.FC<PurchaseEntryViewProps> = ({
         </div>
       )}
 
+      {/* Quick Add Product from Barcode Modal */}
+      {quickBarcodeData && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-2xs p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-indigo-200 dark:border-slate-800 p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                <Barcode className="w-5 h-5" />
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                  {language === 'bn' ? 'নতুন পণ্য ক্রয় এন্ট্রি (বারকোড)' : 'New Product Entry (Scanned Barcode)'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQuickBarcodeData(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-indigo-50/60 dark:bg-slate-800/60 p-2.5 rounded-xl border border-indigo-100 dark:border-slate-700 flex items-center justify-between text-xs">
+              <span className="text-slate-500">{language === 'bn' ? 'স্ক্যানকৃত বারকোড:' : 'Scanned Barcode:'}</span>
+              <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{quickBarcodeData.barcode}</span>
+            </div>
+
+            <form onSubmit={handleSaveQuickBarcodeProduct} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  {language === 'bn' ? 'পণ্যের নাম *' : 'Product Name *'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={quickBarcodeData.name}
+                  onChange={e => setQuickBarcodeData({ ...quickBarcodeData, name: e.target.value })}
+                  placeholder={language === 'bn' ? 'যেমন: লাক্স সাবান ১০০ গ্রাম' : 'e.g. Lux Soap 100g'}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    {language === 'bn' ? 'ক্রয়মূল্য (৳) *' : 'Purchase Price *'}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    required
+                    value={quickBarcodeData.purchasePrice || ''}
+                    onChange={e => setQuickBarcodeData({ ...quickBarcodeData, purchasePrice: parseFloat(e.target.value) || 0 })}
+                    placeholder="0"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    {language === 'bn' ? 'বিক্রয়মূল্য (৳)' : 'Sales Price'}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={quickBarcodeData.salesPrice || ''}
+                    onChange={e => setQuickBarcodeData({ ...quickBarcodeData, salesPrice: parseFloat(e.target.value) || 0 })}
+                    placeholder="0"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    {language === 'bn' ? 'ক্যাটাগরি' : 'Category'}
+                  </label>
+                  <select
+                    value={quickBarcodeData.categoryId}
+                    onChange={e => setQuickBarcodeData({ ...quickBarcodeData, categoryId: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
+                  >
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    {language === 'bn' ? 'একক (Unit)' : 'Unit'}
+                  </label>
+                  <select
+                    value={quickBarcodeData.unit}
+                    onChange={e => setQuickBarcodeData({ ...quickBarcodeData, unit: e.target.value as UnitType })}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
+                  >
+                    <option value="Pcs">Pcs</option>
+                    <option value="Box">Box</option>
+                    <option value="Kg">Kg</option>
+                    <option value="Ltr">Ltr</option>
+                    <option value="Packet">Packet</option>
+                    <option value="Strip">Strip</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setQuickBarcodeData(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold cursor-pointer"
+                >
+                  {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md cursor-pointer flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{language === 'bn' ? 'যোগ করুন' : 'Add to Bill'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Floating Camera Scanner Action Button */}
+      <button
+        type="button"
+        onClick={() => setIsCameraScannerOpen(true)}
+        className="sm:hidden fixed bottom-20 right-4 z-40 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 border-2 border-white/60 active:scale-95 transition-transform"
+        title={language === 'bn' ? 'ক্যামেরা দিয়ে বারকোড স্ক্যান করুন' : 'Scan with Camera'}
+      >
+        <Camera className="w-5 h-5" />
+        <span className="text-xs font-bold pr-1">{language === 'bn' ? 'স্ক্যান' : 'Scan'}</span>
+      </button>
+
       {/* Camera Barcode & QR Code Scanner Modal */}
       <CameraBarcodeScannerModal
         isOpen={isCameraScannerOpen}
         onClose={() => setIsCameraScannerOpen(false)}
         onBarcodeDetected={handleBarcodeScanned}
         products={products}
+        mode="purchase"
+        onAddNewProduct={(barcode) => {
+          setIsCameraScannerOpen(false);
+          setQuickBarcodeData({
+            barcode,
+            name: '',
+            purchasePrice: 0,
+            salesPrice: 0,
+            unit: 'Pcs',
+            categoryId: categories[0]?.id || '',
+          });
+        }}
       />
 
     </div>

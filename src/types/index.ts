@@ -156,6 +156,7 @@ export interface Product {
   instructions?: string; // e.g. 'ভরা পেটে প্রচুর পানিসহ'
   precautions?: string; // e.g. 'গর্ভকালীন চিকিৎসকের পরামর্শ নিন'
   reorderLevel: number;
+  minStockAlert?: number;
   stock: number;
   batchNumber?: string;
   batches?: ProductBatch[];
@@ -879,6 +880,7 @@ export interface SmsLog {
 }
 
 export type InvoiceTemplateStyle =
+  | 'AROGGA_PHARMACY'
   | 'MODERN_MINIMAL'
   | 'CLASSIC_CORPORATE'
   | 'ELEGANT_FRAME'

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation } from '../../i18n/translations';
 import { Product, ProductBatch, UnitType, WarrantyPeriodType, WarrantyType } from '../../types';
-import { Package, X, Save, Calendar, Percent, Upload, Image as ImageIcon, Trash2, ShieldCheck, Tag, AlertCircle, RotateCcw } from 'lucide-react';
+import { Package, X, Save, Calendar, Percent, Upload, Image as ImageIcon, Trash2, ShieldCheck, Tag, AlertCircle, RotateCcw, Camera } from 'lucide-react';
+import { CameraBarcodeScannerModal } from '../common/CameraBarcodeScannerModal';
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -52,6 +53,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [warrantyType, setWarrantyType] = useState<WarrantyType>('REPLACEMENT');
   const [warrantyTerms, setWarrantyTerms] = useState<string>('');
   const [requiresSerialNo, setRequiresSerialNo] = useState<boolean>(false);
+  const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
 
   // Keep track of when modal opens to prevent resetting while typing
   useEffect(() => {
@@ -393,26 +395,48 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 <label className="font-semibold text-slate-700 dark:text-slate-300">
                   Barcode / EAN
                 </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCameraScannerOpen(true)}
+                    className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                    title={language === 'bn' ? 'ক্যামেরা দিয়ে বারকোড স্ক্যান করুন' : 'Scan barcode with camera'}
+                  >
+                    <Camera className="w-3 h-3" />
+                    <span>{language === 'bn' ? 'ক্যামেরা স্ক্যান' : 'Camera Scan'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBarcode(`${Date.now().toString().slice(-8)}`)}
+                    className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                    title="Auto generate unique barcode"
+                  >
+                    <RotateCcw className="w-2.5 h-2.5" />
+                    <span>{language === 'bn' ? 'নতুন বারকোড' : 'New'}</span>
+                  </button>
+                </div>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={barcode}
+                  onChange={e => setBarcode(e.target.value)}
+                  placeholder={language === 'bn' ? 'বারকোড লিখুন বা স্ক্যান করুন...' : 'Enter or scan barcode...'}
+                  className={`w-full pl-3 pr-9 py-2 bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none font-mono ${
+                    isDuplicateBarcode
+                      ? 'border-red-500 text-red-600 dark:text-red-400 focus:border-red-500 bg-red-50/30'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-blue-500 text-slate-900 dark:text-white'
+                  }`}
+                />
                 <button
                   type="button"
-                  onClick={() => setBarcode(`${Date.now().toString().slice(-8)}`)}
-                  className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
-                  title="Auto generate unique barcode"
+                  onClick={() => setIsCameraScannerOpen(true)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer"
+                  title={language === 'bn' ? 'ক্যামেরা স্ক্যান' : 'Scan with camera'}
                 >
-                  <RotateCcw className="w-2.5 h-2.5" />
-                  <span>{language === 'bn' ? 'নতুন বারকোড' : 'New'}</span>
+                  <Camera className="w-4 h-4" />
                 </button>
               </div>
-              <input
-                type="text"
-                value={barcode}
-                onChange={e => setBarcode(e.target.value)}
-                className={`w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none font-mono ${
-                  isDuplicateBarcode
-                    ? 'border-red-500 text-red-600 dark:text-red-400 focus:border-red-500 bg-red-50/30'
-                    : 'border-slate-200 dark:border-slate-700 focus:border-blue-500 text-slate-900 dark:text-white'
-                }`}
-              />
               {isDuplicateBarcode && (
                 <div className="flex items-center gap-1 mt-1 text-[11px] font-bold text-red-600 dark:text-red-400">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
@@ -960,6 +984,18 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           </button>
         </div>
       </div>
+
+      <CameraBarcodeScannerModal
+        isOpen={isCameraScannerOpen}
+        onClose={() => setIsCameraScannerOpen(false)}
+        onBarcodeDetected={(code) => {
+          setBarcode(code);
+          setIsCameraScannerOpen(false);
+          showToast(language === 'bn' ? `বারকোড স্ক্যান সফল: ${code}` : `Barcode scanned: ${code}`, 'success');
+        }}
+        products={products}
+        mode="product-entry"
+      />
     </div>
   );
 };

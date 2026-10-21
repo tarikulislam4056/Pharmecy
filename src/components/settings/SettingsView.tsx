@@ -450,6 +450,11 @@ export const SettingsView: React.FC = () => {
         smsLogs,
         smsConfig,
         expiredReturnLogs,
+        warrantyPolicies,
+        warrantyRecords,
+        warrantyClaims,
+        diseaseMaster: [],
+        diseaseCategories: [],
       };
       const sqlDump = generateFullSqlDump(fullState);
       downloadSqlFile(sqlDump, `dokanpro_erp_database_${new Date().toISOString().split('T')[0]}.sql`);
