@@ -30,6 +30,7 @@ import {
   Quotation,
   PurchaseOrder,
   DeletedSaleInvoice,
+  SalesOrder,
   ActivityLog,
   WarrantyPolicy,
   WarrantyRecord,
@@ -50,6 +51,7 @@ export interface FullAppStateForSql {
   deletedPurchaseInvoices?: any[];
   purchaseReturns?: PurchaseReturn[];
   purchaseOrders?: PurchaseOrder[];
+  salesOrders?: SalesOrder[];
   installmentSchemes: InstallmentScheme[];
   wallets: Wallet[];
   expenseCategories: ExpenseCategory[];
@@ -445,6 +447,34 @@ CREATE TABLE \`quotations\` (
   \`items_json\` longtext DEFAULT NULL,
   \`createdBy\` varchar(100) DEFAULT NULL,
   \`created_at\` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table structure for \`sales_orders\`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS \`sales_orders\`;
+CREATE TABLE \`sales_orders\` (
+  \`id\` varchar(50) NOT NULL PRIMARY KEY,
+  \`orderNumber\` varchar(100) NOT NULL UNIQUE,
+  \`date\` varchar(50) NOT NULL,
+  \`deliveryDate\` varchar(50) DEFAULT NULL,
+  \`customerId\` varchar(50) NOT NULL,
+  \`customerName\` varchar(200) NOT NULL,
+  \`customerPhone\` varchar(50) NOT NULL,
+  \`customerAddress\` text DEFAULT NULL,
+  \`subtotal\` decimal(12,2) NOT NULL DEFAULT 0.00,
+  \`discount\` decimal(12,2) NOT NULL DEFAULT 0.00,
+  \`discountType\` varchar(50) DEFAULT 'flat',
+  \`taxAmount\` decimal(12,2) NOT NULL DEFAULT 0.00,
+  \`grandTotal\` decimal(12,2) NOT NULL DEFAULT 0.00,
+  \`status\` varchar(50) NOT NULL DEFAULT 'PENDING',
+  \`notes\` text DEFAULT NULL,
+  \`walletId\` varchar(50) DEFAULT NULL,
+  \`paidAmount\` decimal(12,2) DEFAULT 0.00,
+  \`createdBy\` varchar(100) DEFAULT NULL,
+  \`convertedSaleInvoiceId\` varchar(50) DEFAULT NULL,
+  \`items_json\` longtext DEFAULT NULL,
+  \`createdAt\` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1215,6 +1245,40 @@ CREATE TABLE \`warranty_claims\` (
       sqlEscape((q as any).createdAt || q.date || ''),
     ]);
     sql += buildChunkedInserts('quotations', quoteColumns, quoteRows);
+  }
+
+  // 9b. Sales Orders
+  if (state.salesOrders && state.salesOrders.length > 0) {
+    const soColumns = [
+      'id', 'orderNumber', 'date', 'deliveryDate', 'customerId', 'customerName', 
+      'customerPhone', 'customerAddress', 'subtotal', 'discount', 'discountType', 
+      'taxAmount', 'grandTotal', 'status', 'notes', 'walletId', 'paidAmount', 
+      'createdBy', 'convertedSaleInvoiceId', 'items_json', 'createdAt'
+    ];
+    const soRows = state.salesOrders.map(so => [
+      sqlEscape(so.id),
+      sqlEscape(so.orderNumber),
+      sqlEscape(so.date),
+      sqlEscape(so.deliveryDate || ''),
+      sqlEscape(so.customerId),
+      sqlEscape(so.customerName),
+      sqlEscape(so.customerPhone),
+      sqlEscape(so.customerAddress || ''),
+      (so.subtotal || 0).toString(),
+      (so.discount || 0).toString(),
+      sqlEscape(so.discountType || 'flat'),
+      (so.taxAmount || 0).toString(),
+      (so.grandTotal || 0).toString(),
+      sqlEscape(so.status),
+      sqlEscape(so.notes || ''),
+      sqlEscape(so.walletId || ''),
+      (so.paidAmount || 0).toString(),
+      sqlEscape(so.createdBy || ''),
+      sqlEscape(so.convertedSaleInvoiceId || ''),
+      sqlEscape(so.items || []),
+      sqlEscape(so.createdAt || '')
+    ]);
+    sql += buildChunkedInserts('sales_orders', soColumns, soRows);
   }
 
   // 10. Purchase Invoices

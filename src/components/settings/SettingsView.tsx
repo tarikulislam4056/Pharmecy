@@ -192,6 +192,7 @@ export const SettingsView: React.FC = () => {
     users,
     quotations,
     purchaseOrders,
+    salesOrders,
     deletedSaleInvoices,
     activityLogs,
     expiredReturnLogs,
@@ -453,6 +454,7 @@ export const SettingsView: React.FC = () => {
         warrantyPolicies,
         warrantyRecords,
         warrantyClaims,
+        salesOrders,
         diseaseMaster: [],
         diseaseCategories: [],
       };
