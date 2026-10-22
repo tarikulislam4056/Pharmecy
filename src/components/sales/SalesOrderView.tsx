@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { SalesOrder, SalesOrderStatus, SalesOrderItem, Party, Product, PaymentMethod } from '../../types';
-import { canUserDelete, canUserEdit, canUserConvertSalesOrder, canUserUpdateSalesOrderStatus } from '../../utils/permissions';
+import { canUserDelete, canUserEdit, canUserConvertSalesOrder, canUserUpdateSalesOrderStatus, hasPermission } from '../../utils/permissions';
 import { getCustomerTotalDue } from '../../utils/dueHelpers';
 import { MultiUserAuditTrail } from '../common/MultiUserAuditTrail';
 import { 
@@ -440,6 +440,15 @@ export const SalesOrderView: React.FC = () => {
           <button
             type="button"
             onClick={() => {
+              if (!hasPermission(currentUser, 'SALES_ORDER_ADD')) {
+                showToast(
+                  language === 'bn'
+                    ? 'আপনার সেলস অর্ডার তৈরি করার পারমিশন নেই।'
+                    : 'You do not have permission to create sales orders.',
+                  'error'
+                );
+                return;
+              }
               setEditingOrder(null);
               setCustomerId('');
               setOrderItems([]);
