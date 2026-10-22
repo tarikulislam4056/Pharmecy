@@ -12,6 +12,7 @@ import { PosSaleView } from './components/sales/PosSaleView';
 import { SalesListView } from './components/sales/SalesListView';
 import { SalesReturnView } from './components/sales/SalesReturnView';
 import { QuotationView } from './components/sales/QuotationView';
+import { SalesOrderView } from './components/sales/SalesOrderView';
 import { CustomersView } from './components/crm/CustomersView';
 import { DueListView } from './components/crm/DueListView';
 import { SuppliersView } from './components/crm/SuppliersView';
@@ -271,6 +272,9 @@ const MainLayout: React.FC = () => {
 
       case 'quotations':
         return <QuotationView />;
+
+      case 'sales-orders':
+        return <SalesOrderView />;
 
       case 'customers':
         return (

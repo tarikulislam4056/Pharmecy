@@ -69,6 +69,20 @@ export const AVAILABLE_PERMISSIONS: PermissionDefinition[] = [
     ],
   },
   {
+    id: 'SALES_ORDER_ACCESS',
+    name: 'Sales Order Management',
+    nameBn: 'সেলস অর্ডার ব্যবস্থাপনা (Sales Order)',
+    description: 'Create customer sales orders, track pipeline, update order status, and convert to sales invoices',
+    tabs: ['sales-orders'],
+    category: 'module',
+    subPermissions: [
+      { id: 'SALES_ORDER_ADD', name: 'Create Sales Order', nameBn: 'সেলস অর্ডার তৈরি' },
+      { id: 'SALES_ORDER_EDIT', name: 'Update Order Status', nameBn: 'অর্ডার স্ট্যাটাস পরিবর্তন' },
+      { id: 'SALES_ORDER_CONVERT', name: 'Convert to Invoice', nameBn: 'ইনভয়েসে রূপান্তর' },
+      { id: 'SALES_ORDER_DELETE', name: 'Delete Sales Order', nameBn: 'সেলস অর্ডার মুছে ফেলা' },
+    ],
+  },
+  {
     id: 'PURCHASE_MANAGEMENT',
     name: 'Purchase Entry & Supplier Bills',
     nameBn: 'ক্রয় চালান ও মহাজন হিসাব',
@@ -192,6 +206,7 @@ export const ROLE_PRESET_PERMISSIONS: Record<string, string[]> = {
     'DASHBOARD',
     'POS_ACCESS',
     'SALES_MANAGEMENT',
+    'SALES_ORDER_ACCESS',
     'PURCHASE_MANAGEMENT',
     'PRODUCTS_INVENTORY',
     'MEDICINE_ACCESS',
@@ -235,6 +250,10 @@ export const ROLE_PRESET_SUB_PERMISSIONS: Record<string, string[]> = {
     'SALES_EDIT',
     'SALES_DELETE',
     'SALES_RETURN',
+    'SALES_ORDER_ADD',
+    'SALES_ORDER_EDIT',
+    'SALES_ORDER_CONVERT',
+    'SALES_ORDER_DELETE',
     'PURCHASE_ADD',
     'PURCHASE_EDIT',
     'PURCHASE_DELETE',
@@ -259,6 +278,9 @@ export const ROLE_PRESET_SUB_PERMISSIONS: Record<string, string[]> = {
     'SALES_ADD',
     'SALES_EDIT',
     'SALES_RETURN',
+    'SALES_ORDER_ADD',
+    'SALES_ORDER_EDIT',
+    'SALES_ORDER_CONVERT',
     'PURCHASE_ADD',
     'PURCHASE_EDIT',
     'PRODUCT_ADD',
@@ -325,13 +347,16 @@ export const canUserDelete = (user: UserAccount | null | undefined, module?: 'sa
   if (module === 'medicine' && (user.subPermissions?.includes('MEDICINE_DELETE') || user.permissions?.includes('MEDICINE_DELETE'))) {
     return true;
   }
+  if (module === 'sales-order' && (user.subPermissions?.includes('SALES_ORDER_DELETE') || user.permissions?.includes('SALES_ORDER_DELETE'))) {
+    return true;
+  }
   return false;
 };
 
 /**
  * Check if a user has permission to EDIT records (e.g. sales invoices, products, purchases)
  */
-export const canUserEdit = (user: UserAccount | null | undefined, module?: 'sales' | 'purchase' | 'product' | 'user' | 'medicine' | string): boolean => {
+export const canUserEdit = (user: UserAccount | null | undefined, module?: 'sales' | 'purchase' | 'product' | 'user' | 'medicine' | 'sales-order' | string): boolean => {
   if (!user) return false;
   if (user.role === 'ADMIN' || user.permissions?.includes('ALL')) {
     return true;
@@ -340,6 +365,9 @@ export const canUserEdit = (user: UserAccount | null | undefined, module?: 'sale
     return true;
   }
   if (module === 'sales' && (user.subPermissions?.includes('SALES_EDIT') || user.permissions?.includes('SALES_EDIT'))) {
+    return true;
+  }
+  if (module === 'sales-order' && (user.subPermissions?.includes('SALES_ORDER_EDIT') || user.permissions?.includes('SALES_ORDER_EDIT'))) {
     return true;
   }
   if (module === 'purchase' && (user.subPermissions?.includes('PURCHASE_EDIT') || user.permissions?.includes('PURCHASE_EDIT'))) {
@@ -458,6 +486,53 @@ export const canUserAccessMedicine = (user: UserAccount | null | undefined): boo
 };
 
 /**
+ * Check if a user has permission to Access Sales Orders Management
+ */
+export const canUserAccessSalesOrder = (user: UserAccount | null | undefined): boolean => {
+  if (!user) return false;
+  if (user.role === 'ADMIN' || user.permissions?.includes('ALL')) {
+    return true;
+  }
+  return hasPermission(user, 'SALES_ORDER_ACCESS');
+};
+
+/**
+ * Check if a user has permission to convert sales orders (deliver / invoice)
+ */
+export const canUserConvertSalesOrder = (user: UserAccount | null | undefined): boolean => {
+  if (!user) return false;
+  if (user.role === 'ADMIN' || user.permissions?.includes('ALL')) {
+    return true;
+  }
+  if (user.permissions?.includes('CAN_EDIT') || user.subPermissions?.includes('CAN_EDIT')) {
+    return true;
+  }
+  return !!(
+    user.permissions?.includes('SALES_ORDER_CONVERT') ||
+    user.subPermissions?.includes('SALES_ORDER_CONVERT') ||
+    user.permissions?.includes('SALES_ORDER_EDIT') ||
+    user.subPermissions?.includes('SALES_ORDER_EDIT')
+  );
+};
+
+/**
+ * Check if a user has permission to update sales order status
+ */
+export const canUserUpdateSalesOrderStatus = (user: UserAccount | null | undefined): boolean => {
+  if (!user) return false;
+  if (user.role === 'ADMIN' || user.permissions?.includes('ALL')) {
+    return true;
+  }
+  if (user.permissions?.includes('CAN_EDIT') || user.subPermissions?.includes('CAN_EDIT')) {
+    return true;
+  }
+  return !!(
+    user.permissions?.includes('SALES_ORDER_EDIT') ||
+    user.subPermissions?.includes('SALES_ORDER_EDIT')
+  );
+};
+
+/**
  * Map a tab to the required permission(s)
  */
 export const TAB_PERMISSION_MAP: Record<ViewTab, string[]> = {
@@ -466,6 +541,7 @@ export const TAB_PERMISSION_MAP: Record<ViewTab, string[]> = {
   'sales-list': ['SALES_MANAGEMENT'],
   'sales-returns': ['SALES_MANAGEMENT'],
   'quotations': ['SALES_MANAGEMENT'],
+  'sales-orders': ['SALES_ORDER_ACCESS'],
   'deleted-invoices': ['SALES_MANAGEMENT'],
   'purchase-entry': ['PURCHASE_MANAGEMENT'],
   'purchase-list': ['PURCHASE_MANAGEMENT'],

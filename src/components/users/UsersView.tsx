@@ -31,6 +31,7 @@ import {
   Download,
   FileSpreadsheet,
   Pill,
+  ClipboardList,
 } from 'lucide-react';
 
 import {
@@ -46,6 +47,7 @@ import {
   canUserDownloadReportPdf,
   canUserPrintReportStatement,
   canUserAccessMedicine,
+  canUserAccessSalesOrder,
   hasPermission,
 } from '../../utils/permissions';
 
@@ -363,6 +365,49 @@ export const UsersView: React.FC = () => {
     );
   };
 
+  const handleToggleUserSalesOrderPermission = (targetUser: UserAccount) => {
+    if (currentUser.role !== 'ADMIN') {
+      showToast(language === 'bn' ? 'শুধুমাত্র এডমিন পারমিশন পরিবর্তন করতে পারবেন।' : 'Only Admins can change user permissions.', 'error');
+      return;
+    }
+
+    if (targetUser.role === 'ADMIN') {
+      showToast(language === 'bn' ? 'এডমিন ইউজারের সকল পারমিশন স্বয়ংক্রিয়ভাবে সক্রিয় থাকে।' : 'Admin user has full access by default.', 'info');
+      return;
+    }
+
+    const currentPerms = targetUser.permissions || [];
+    const currentSubPerms = targetUser.subPermissions || [];
+    const hasSO = canUserAccessSalesOrder(targetUser);
+
+    let newPerms = [...currentPerms];
+    let newSubPerms = [...currentSubPerms];
+
+    if (hasSO) {
+      newPerms = newPerms.filter(p => p !== 'SALES_ORDER_ACCESS');
+      newSubPerms = newSubPerms.filter(p => !p.startsWith('SALES_ORDER_'));
+    } else {
+      if (!newPerms.includes('SALES_ORDER_ACCESS')) {
+        newPerms.push('SALES_ORDER_ACCESS');
+      }
+      ['SALES_ORDER_ADD', 'SALES_ORDER_EDIT', 'SALES_ORDER_CONVERT'].forEach(sp => {
+        if (!newSubPerms.includes(sp)) newSubPerms.push(sp);
+      });
+    }
+
+    updateUser(targetUser.id, {
+      permissions: newPerms,
+      subPermissions: newSubPerms,
+    });
+
+    showToast(
+      language === 'bn'
+        ? `"${targetUser.fullName}"-এর জন্য সেলস অর্ডার পারমিশন ${!hasSO ? 'অনুমতি প্রদান করা হয়েছে ✅' : 'বন্ধ করা হয়েছে ❌'}`
+        : `Sales Order permission ${!hasSO ? 'Granted ✅' : 'Revoked ❌'} for ${targetUser.fullName}`,
+      !hasSO ? 'success' : 'info'
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !username.trim()) {
@@ -431,23 +476,50 @@ export const UsersView: React.FC = () => {
       </div>
 
       {/* Security Policy Information Banner */}
-      <div className="p-4 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-indigo-500/10 border border-blue-200 dark:border-blue-900/50 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+      <div className="p-4 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border border-indigo-200 dark:border-indigo-900/50 rounded-2xl flex flex-col gap-3 text-xs shadow-xs">
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-blue-600 text-white rounded-xl shadow-xs shrink-0 mt-0.5">
-            <ShieldCheck className="w-4 h-4" />
+          <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-xs shrink-0 mt-0.5">
+            <ShieldCheck className="w-5 h-5" />
           </div>
-          <div>
-            <h4 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <span>{language === 'bn' ? 'সিস্টেম রোল ও লগইন নিরাপত্তা নীতি' : 'System Role & Login Security Policy'}</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-mono font-bold">
-                RBAC Security Active
-              </span>
-            </h4>
-            <p className="text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-              {language === 'bn'
-                ? 'এডমিন (ADMIN) লগইন করার পর যেকোনো ইউজারের প্রোফাইলে আইডি ও পাসওয়ার্ড ছাড়া সরাসরি সুইচ করতে পারবে। কিন্তু এডমিন ব্যতীত অন্য যেকোনো ইউজার (Sales Man, Cashier, Manager ইত্যাদি) লগইন থাকলে, সে সঠিক আইডি ও পাসওয়ার্ড প্রদান ছাড়া অন্য কোনো ইউজারে পরিবর্তন হতে পারবে না।'
-                : 'After Admin login, any user profile can be switched to without ID & password. However, when non-admin users are logged in, switching to any other user account strictly requires entering the correct account password.'}
-            </p>
+          <div className="flex-1 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h4 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <span>{language === 'bn' ? 'সিস্টেম রোল ও লগইন নিরাপত্তা নীতি' : 'System Role & Login Security Policy'}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-mono font-bold">
+                  RBAC Security Active
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold flex items-center gap-1 border border-indigo-200 dark:border-indigo-800">
+                  <ClipboardList className="w-3 h-3 text-indigo-600" />
+                  {language === 'bn' ? 'সেলস অর্ডার পারমিশন নিয়ন্ত্রিত' : 'Sales Order Guarded'}
+                </span>
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 border-t border-indigo-100/70 dark:border-indigo-900/40">
+              <div className="p-2.5 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800">
+                <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 mb-1 text-[11px]">
+                  <Key className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{language === 'bn' ? 'লগইন ও প্রোফাইল সুইচ নীতি' : 'Login & Account Switching Policy'}</span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-[11px]">
+                  {language === 'bn'
+                    ? 'এডমিন (ADMIN) লগইন করার পর যেকোনো ইউজারের প্রোফাইলে পাসওয়ার্ড ছাড়া সরাসরি সুইচ করতে পারে। অন্য কোনো সাধারণ ইউজার লগইন থাকলে পাসওয়ার্ড প্রদান ছাড়া অ্যাকাউন্ট সুইচ করা অসম্ভব।'
+                    : 'Admin can switch to any user profile seamlessly. Non-admin users strictly require entering account passwords to switch profiles.'}
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60">
+                <div className="font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5 mb-1 text-[11px]">
+                  <ClipboardList className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>{language === 'bn' ? 'সেলস অর্ডার (Sales Order) পারমিশন নীতি' : 'Sales Order Access Control Policy'}</span>
+                </div>
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[11px]">
+                  {language === 'bn'
+                    ? 'সেলস অর্ডার শুধুমাত্র সেই ইউজারই ব্যবহার করতে পারবে যাকে এডমিন পারমিশন প্রদান করবে। পারমিশন না থাকলে সাইডবারে সেলস অর্ডার বাটন হাইড থাকবে এবং এক্সেস সম্পূর্ণ লক থাকবে। নিচে টেবিল থেকে এক ক্লিকেই যেকোনো ইউজারের সেলস অর্ডার পারমিশন অন/অফ করতে পারবেন।'
+                    : 'Sales Order is strictly restricted: only users explicitly granted permission by Admin can view, create, and convert sales orders. Unpermitted users will have the menu hidden and access locked.'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -807,6 +879,7 @@ export const UsersView: React.FC = () => {
                           const canRepPdf = canUserDownloadReportPdf(u);
                           const canRepPrint = canUserPrintReportStatement(u);
                           const hasMedAccess = canUserAccessMedicine(u);
+                          const hasSalesOrderAccess = canUserAccessSalesOrder(u);
 
                           return (
                             <div className="flex flex-col items-center gap-1.5 min-w-[210px]">
@@ -817,8 +890,31 @@ export const UsersView: React.FC = () => {
                                 </span>
                               </div>
 
-                              {/* Granular Export / PDF / Print / Medicine Quick-Toggles */}
+                              {/* Granular Export / PDF / Print / Medicine / Sales Order Quick-Toggles */}
                               <div className="flex flex-wrap items-center justify-center gap-1">
+                                {/* Sales Order Access Toggle */}
+                                <button
+                                  type="button"
+                                  disabled={u.role === 'ADMIN'}
+                                  onClick={() => handleToggleUserSalesOrderPermission(u)}
+                                  title={
+                                    u.role === 'ADMIN'
+                                      ? 'Admin has full access'
+                                      : (hasSalesOrderAccess
+                                          ? (language === 'bn' ? 'সেলস অর্ডার পারমিশন সক্রিয় (ক্লিক করে বন্ধ করুন)' : 'Sales Order: Allowed (Click to toggle off)')
+                                          : (language === 'bn' ? 'সেলস অর্ডার পারমিশন বন্ধ (ক্লিক করে অনুমতি দিন)' : 'Sales Order: Disabled (Click to grant)'))
+                                  }
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5 transition-all shadow-2xs ${
+                                    hasSalesOrderAccess
+                                      ? 'bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800'
+                                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 opacity-60'
+                                  } ${u.role === 'ADMIN' ? 'cursor-default opacity-100' : 'cursor-pointer'}`}
+                                >
+                                  <ClipboardList className="w-2.5 h-2.5 text-indigo-600" />
+                                  <span>Sales Order</span>
+                                  {hasSalesOrderAccess ? <Check className="w-2.5 h-2.5 text-indigo-600" /> : <X className="w-2.5 h-2.5 text-slate-400" />}
+                                </button>
+
                                 {/* Medicine Access Toggle */}
                                 <button
                                   type="button"

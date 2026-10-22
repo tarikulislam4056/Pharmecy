@@ -208,12 +208,14 @@ export const PrintInvoiceModal: React.FC = () => {
   const isPurchase = type === 'PURCHASE_VOUCHER' || data.documentTitle?.includes('PURCHASE') || data.documentTitle?.includes('ক্রয়');
   const isChalan = data.isChalan || data.documentTitle?.includes('CHALAN') || data.documentTitle?.includes('চালান');
   const isQuotation = data.isQuotation || data.documentTitle?.includes('QUOTATION') || data.documentTitle?.includes('কোটেশন');
+  const isSalesOrder = type === 'SALES_ORDER' || data.isSalesOrder || data.documentTitle?.includes('SALES ORDER') || data.documentTitle?.includes('সেলস অর্ডার');
   
   let docTitle = 'Invoice';
   if (data.documentTitle) docTitle = data.documentTitle;
   else if (isChalan) docTitle = 'Delivery Chalan';
   else if (isPurchase) docTitle = 'Purchase Bill';
   else if (isQuotation) docTitle = language === 'bn' ? 'প্রাইস কোটেশন' : 'Price Quotation';
+  else if (isSalesOrder) docTitle = language === 'bn' ? 'সেলস অর্ডার' : 'Sales Order';
 
   const showPaymentStatus = !isQuotation || data.status === 'CONVERTED_TO_SALE';
 
@@ -578,7 +580,7 @@ export const PrintInvoiceModal: React.FC = () => {
           {/* ========================================================================= */}
           {/* FORMAT 1: 80MM POS THERMAL RECEIPT */}
           {/* ========================================================================= */}
-          {printFormat === 'POS_80MM' && (type === 'INVOICE_A4' || type === 'POS_80MM' || type === 'PURCHASE_VOUCHER') ? (
+          {printFormat === 'POS_80MM' && (type === 'INVOICE_A4' || type === 'POS_80MM' || type === 'PURCHASE_VOUCHER' || type === 'SALES_ORDER') ? (
             <div className="printable-receipt w-[340px] bg-white text-black p-4 font-mono text-xs shadow-md border border-zinc-200 rounded-sm print:shadow-none print:border-none">
               <div className="text-center border-b border-dashed border-zinc-400 pb-3 mb-3">
                 {companySettings.logoUrl && (
@@ -716,7 +718,7 @@ export const PrintInvoiceModal: React.FC = () => {
           {/* ========================================================================= */}
           {/* FORMAT 1B: 80MM XPRINTER DEDICATED POS SLIP */}
           {/* ========================================================================= */}
-          {printFormat === 'XPRINTER_80MM' && (type === 'INVOICE_A4' || type === 'POS_80MM' || type === 'PURCHASE_VOUCHER') ? (
+          {printFormat === 'XPRINTER_80MM' && (type === 'INVOICE_A4' || type === 'POS_80MM' || type === 'PURCHASE_VOUCHER' || type === 'SALES_ORDER') ? (
             <div className="printable-receipt w-[340px] bg-white text-black p-4 font-mono text-xs shadow-md border border-zinc-200 rounded-sm print:shadow-none print:border-none">
               {/* Top Store Header */}
               <div className="text-center border-b-2 border-black pb-2 mb-2">
@@ -879,7 +881,7 @@ export const PrintInvoiceModal: React.FC = () => {
           {/* ========================================================================= */}
           {/* FORMAT 2: DYNAMIC INVOICE DESIGN TEMPLATES (6 Distinct A4 Styles)         */}
           {/* ========================================================================= */}
-          {printFormat === 'A4' && (type === 'INVOICE_A4' || type === 'PURCHASE_VOUCHER' || type === 'POS_80MM') && (
+          {printFormat === 'A4' && (type === 'INVOICE_A4' || type === 'PURCHASE_VOUCHER' || type === 'POS_80MM' || type === 'SALES_ORDER') && (
             <div className={`printable-invoice w-full ${printOrientation === 'LANDSCAPE' ? 'max-w-[1120px] min-h-[794px]' : 'max-w-[850px] min-h-[1080px]'} bg-white text-black p-8 md:p-12 shadow-xl border border-zinc-200 rounded-sm font-sans flex flex-col justify-between print:shadow-none print:border-none print:p-8 print:w-full print:max-w-none print:min-h-screen`}>
               
               {/* ========================================== */}
@@ -900,20 +902,22 @@ export const PrintInvoiceModal: React.FC = () => {
                             <span className="text-emerald-700">gga</span>
                           </div>
                         )}
-                        <p className="text-[11px] text-zinc-500 font-sans mt-0.5">
-                          {companySettings.slogan || 'For better health'}
-                        </p>
+                        {companySettings.slogan && (
+                          <p className="text-[11px] text-zinc-500 font-sans mt-0.5">
+                            {companySettings.slogan}
+                          </p>
+                        )}
                       </div>
 
                       <div className="text-right">
-                        <h2 className="text-2xl font-serif font-bold uppercase tracking-widest text-zinc-900">INVOICE</h2>
+                        <h2 className="text-2xl font-serif font-bold uppercase tracking-widest text-zinc-900">{docTitle || 'INVOICE'}</h2>
                       </div>
                     </div>
 
                     {/* Invoice No & Dates Bar */}
                     <div className="grid grid-cols-2 gap-4 py-3 border-b border-zinc-200 text-xs font-medium text-zinc-800">
                       <div>
-                        <span className="text-zinc-500">Invoice No:</span>{' '}
+                        <span className="text-zinc-500">{isPurchase ? 'Bill No:' : (isSalesOrder ? 'Order No:' : 'Invoice No:')}</span>{' '}
                         <span className="font-bold text-black">{data.invoiceNumber || data.voucherNo || data.billNumber || '5680283'}</span>
                       </div>
                       <div className="text-right flex justify-end gap-6">
@@ -932,11 +936,12 @@ export const PrintInvoiceModal: React.FC = () => {
                     <div className="grid grid-cols-2 gap-6 my-4 border-b border-zinc-200 pb-4 text-xs">
                       <div>
                         <h4 className="font-bold text-zinc-900 uppercase tracking-wide mb-1 text-[11px]">Bill From</h4>
-                        <div className="font-bold text-black">{companySettings.name || 'Arogga Limited'}</div>
-                        <div className="text-zinc-700">{companySettings.phone || '09610016778'}</div>
-                        <div className="text-blue-600 underline">{companySettings.website || 'www.arogga.com'}</div>
-                        <div className="text-zinc-700 leading-snug mt-0.5">{companySettings.address || 'D/15-1, Road-36, Block-D, Section-10, Mirpur, Dhaka-1216'}</div>
-                        <div className="text-zinc-800 font-semibold mt-1">BIN Number: {companySettings.taxNumber || '004687255-0202'}</div>
+                        <div className="font-bold text-black">{companySettings.name || 'Store'}</div>
+                        {companySettings.phone && <div className="text-zinc-700">Phone: {companySettings.phone}</div>}
+                        {companySettings.email && <div className="text-zinc-700">Email: {companySettings.email}</div>}
+                        {companySettings.website && <div className="text-blue-600 underline">{companySettings.website}</div>}
+                        {companySettings.address && <div className="text-zinc-700 leading-snug mt-0.5">{companySettings.address}</div>}
+                        {companySettings.taxNumber && <div className="text-zinc-800 font-semibold mt-1">BIN Number: {companySettings.taxNumber}</div>}
                       </div>
 
                       <div className="space-y-3">
@@ -952,7 +957,7 @@ export const PrintInvoiceModal: React.FC = () => {
                             {data.customerName || data.supplierName || 'MD TARIKUL ISLAM'}, {data.customerPhone || data.supplierPhone || '+8801312305225'}
                           </div>
                           <div className="text-zinc-700 leading-snug mt-0.5">
-                            {data.customerAddress || data.supplierAddress || 'modhya boyra namapara, Bhatsala Sheprur Sadar, Sherpur, Mymensingh'}
+                            {data.customerAddress || data.supplierAddress || ''}
                           </div>
                         </div>
                       </div>
@@ -1132,7 +1137,7 @@ export const PrintInvoiceModal: React.FC = () => {
                       </div>
                       <div className="flex items-baseline border-b border-zinc-200 pb-1">
                         <span className="w-24 text-zinc-600">Address:</span>
-                        <span className="text-black">{data.customerAddress || data.supplierAddress || 'Target Denim, Gazipur'}</span>
+                        <span className="text-black">{data.customerAddress || data.supplierAddress || ''}</span>
                       </div>
                     </div>
 
@@ -1333,7 +1338,7 @@ export const PrintInvoiceModal: React.FC = () => {
                         </div>
                         <div className="font-bold text-black text-sm">{data.customerName || data.supplierName || 'Md. Kader'}</div>
                         <div className="text-zinc-600">Phone: {data.customerPhone || data.supplierPhone || '01886228472'}</div>
-                        <div className="text-zinc-600">Address: {data.customerAddress || data.supplierAddress || 'Gazipur, Bangladesh'}</div>
+                        <div className="text-zinc-600">Address: {data.customerAddress || data.supplierAddress || ''}</div>
                       </div>
                     </div>
 
@@ -1516,7 +1521,7 @@ export const PrintInvoiceModal: React.FC = () => {
                         <span className="text-zinc-600 ml-3">Phone: {data.customerPhone || data.supplierPhone || '01886228472'}</span>
                       </div>
                       <div className="text-zinc-600 truncate max-w-[260px]">
-                        Address: {data.customerAddress || data.supplierAddress || 'Gazipur'}
+                        {data.customerAddress || data.supplierAddress ? `Address: ${data.customerAddress || data.supplierAddress}` : ''}
                       </div>
                     </div>
 
@@ -1650,7 +1655,7 @@ export const PrintInvoiceModal: React.FC = () => {
                       </div>
                       <div>
                         <div className="text-[10px] font-bold uppercase text-zinc-500 tracking-wider">Delivery Location</div>
-                        <div className="text-zinc-700 mt-0.5">{data.customerAddress || data.supplierAddress || 'Gazipur, Bangladesh'}</div>
+                        <div className="text-zinc-700 mt-0.5">{data.customerAddress || data.supplierAddress || ''}</div>
                       </div>
                     </div>
 
@@ -1765,7 +1770,7 @@ export const PrintInvoiceModal: React.FC = () => {
                     {/* Customer Line */}
                     <div className="flex justify-between items-center bg-zinc-100 px-2.5 py-1 mb-3 text-[11px]">
                       <div><strong>Party:</strong> {data.customerName || data.supplierName || 'Md. Kader'} ({data.customerPhone || data.supplierPhone || '01886228472'})</div>
-                      <div><strong>Address:</strong> {data.customerAddress || data.supplierAddress || 'Gazipur'}</div>
+                      <div>{data.customerAddress || data.supplierAddress ? <strong>Address:</strong> : null} {data.customerAddress || data.supplierAddress || ''}</div>
                     </div>
 
                     {/* High-density Table */}

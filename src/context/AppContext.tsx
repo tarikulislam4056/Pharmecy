@@ -19,6 +19,9 @@ import {
   Quotation,
   QuotationStatus,
   QuotationItem,
+  SalesOrder,
+  SalesOrderStatus,
+  SalesOrderItem,
   InstallmentScheme,
   Wallet,
   ExpenseCategory,
@@ -115,7 +118,9 @@ export type PrintableDocumentType =
   | 'BARCODE_SHEET'
   | 'PRODUCT_LIST'
   | 'BATCH_TRACEABILITY_SLIP'
-  | 'WARRANTY_CARD';
+  | 'BATCH_TRACEABILITY_SLIP'
+  | 'WARRANTY_CARD'
+  | 'SALES_ORDER';
 
 export interface PrintableDocumentData {
   type: PrintableDocumentType;
@@ -188,6 +193,13 @@ interface AppContextType {
   updateQuotationStatus: (id: string, status: QuotationStatus) => void;
   convertQuotationToSale: (qId: string, paidAmount: number, walletId: string, paymentMethod: PaymentMethod, customInvoiceNumber?: string) => SaleInvoice | null;
   deleteQuotation: (id: string) => void;
+
+  salesOrders: SalesOrder[];
+  addSalesOrder: (oData: Omit<SalesOrder, 'id' | 'orderNumber' | 'createdAt'>) => SalesOrder;
+  updateSalesOrder: (id: string, oData: Partial<SalesOrder>) => void;
+  updateSalesOrderStatus: (id: string, status: SalesOrderStatus) => void;
+  convertSalesOrderToSale: (orderId: string, paidAmount: number, walletId: string, paymentMethod: PaymentMethod, customInvoiceNumber?: string) => SaleInvoice | null;
+  deleteSalesOrder: (id: string) => void;
   
   expiredReturnLogs: ExpiredReturnLog[];
   installmentSchemes: InstallmentScheme[];
@@ -288,7 +300,7 @@ interface AppContextType {
     walletId: string;
     date: string;
     remarks: string;
-  }) => void;
+  }) => boolean;
 
   // Actions - Purchases
   deletedPurchaseInvoices: DeletedPurchaseInvoice[];
@@ -600,6 +612,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [purchaseReturns, setPurchaseReturns] = useState<PurchaseReturn[]>(() => getPersistedData('purchaseReturns', []));
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(() => getPersistedData('purchaseOrders', initialPurchaseOrders));
   const [quotations, setQuotations] = useState<Quotation[]>(() => getPersistedData('quotations', []));
+  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>(() => getPersistedData('salesOrders', []));
 
   // Warranty States
   const [warrantyPolicies, setWarrantyPolicies] = useState<WarrantyPolicy[]>(() =>
@@ -1100,6 +1113,122 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     return saleInvoice;
+  };
+
+  const addSalesOrder = (oData: Omit<SalesOrder, 'id' | 'orderNumber' | 'createdAt'>) => {
+    const orderNumber = `SO-${new Date().getFullYear()}-${String(salesOrders.length + 1).padStart(3, '0')}`;
+    const nowTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const creatorName = currentUser?.fullName || currentUser?.username || 'Admin';
+    const newOrder: SalesOrder = {
+      ...oData,
+      id: `so-${Date.now()}`,
+      orderNumber,
+      createdAt: `${oData.date} ${nowTime}`,
+      createdBy: creatorName,
+    };
+    setSalesOrders(prev => [newOrder, ...prev]);
+    showToast(language === 'bn' ? `সেলস অর্ডার ${orderNumber} তৈরি করা হয়েছে।` : `Sales Order ${orderNumber} created successfully.`, 'success');
+    return newOrder;
+  };
+
+  const updateSalesOrderStatus = (id: string, status: SalesOrderStatus) => {
+    setSalesOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+    showToast(language === 'bn' ? 'সেলস অর্ডার স্ট্যাটাস আপডেট করা হয়েছে।' : 'Sales order status updated.', 'success');
+  };
+
+  const updateSalesOrder = (id: string, oData: Partial<SalesOrder>) => {
+    setSalesOrders(prev => prev.map(o => o.id === id ? { ...o, ...oData } : o));
+    const ord = salesOrders.find(item => item.id === id);
+    if (ord) {
+      logActivity({
+        actionType: 'USER_ACTION',
+        title: `Updated Sales Order #${ord.orderNumber}`,
+        description: `Updated sales order for ${ord.customerName} amounting to ৳${(oData.grandTotal ?? ord.grandTotal).toLocaleString()}.`,
+        severity: 'info',
+        targetId: ord.id,
+        targetName: `SO #${ord.orderNumber}`,
+      });
+    }
+    showToast(language === 'bn' ? 'সেলস অর্ডার সফলভাবে আপডেট করা হয়েছে।' : 'Sales order updated successfully.', 'success');
+  };
+
+  const deleteSalesOrder = (id: string) => {
+    const ord = salesOrders.find(item => item.id === id);
+    setSalesOrders(prev => prev.filter(item => item.id !== id));
+    if (ord) {
+      logActivity({
+        actionType: 'DELETE',
+        title: `Deleted Sales Order #${ord.orderNumber}`,
+        description: `Removed sales order for ${ord.customerName} amounting to ৳${ord.grandTotal.toLocaleString()}.`,
+        severity: 'warning',
+        targetId: ord.id,
+        targetName: `SO #${ord.orderNumber}`,
+      });
+    }
+    showToast(language === 'bn' ? 'সেলস অর্ডার মুছে ফেলা হয়েছে।' : 'Sales order deleted.', 'info');
+  };
+
+  const convertSalesOrderToSale = (orderId: string, paidAmount: number, walletId: string, paymentMethod: PaymentMethod, customInvoiceNumber?: string): SaleInvoice | null => {
+    const order = salesOrders.find(o => o.id === orderId);
+    if (!order) {
+      showToast(language === 'bn' ? 'সেলস অর্ডার পাওয়া যায়নি!' : 'Sales Order not found!', 'error');
+      return null;
+    }
+
+    if (order.status === 'CONVERTED_TO_SALE') {
+      showToast(language === 'bn' ? 'এই সেলস অর্ডারটি আগেই বিক্রয়ে রূপান্তরিত হয়েছে।' : 'This sales order has already been converted to a sale.', 'warning');
+      return null;
+    }
+
+    const saleItems = order.items.map(i => ({
+      productId: i.productId,
+      name: i.name,
+      nameBn: i.nameBn,
+      unit: i.unit,
+      unitPrice: i.unitPrice,
+      quantity: i.quantity,
+      discount: i.discount,
+      discountType: i.discountType,
+      taxPercent: i.taxPercent,
+      total: i.total,
+      dosageForm: i.dosageForm,
+      strength: i.strength,
+    }));
+
+    let finalCustomerId = order.customerId;
+    if (!finalCustomerId || finalCustomerId === 'walk-in') {
+      const matchedParty = parties.find(p => p.type === 'CUSTOMER' && ((order.customerPhone && p.phone && p.phone === order.customerPhone) || (order.customerName && p.name.toLowerCase() === order.customerName.toLowerCase())));
+      if (matchedParty) {
+        finalCustomerId = matchedParty.id;
+      }
+    }
+
+    const invoice = createSaleInvoice({
+      invoiceNumber: customInvoiceNumber,
+      date: new Date().toISOString().split('T')[0],
+      customerId: finalCustomerId || order.customerId,
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      customerAddress: order.customerAddress,
+      items: saleItems,
+      subtotal: order.subtotal,
+      discount: order.discount,
+      discountType: order.discountType,
+      vatAmount: order.taxAmount,
+      grandTotal: order.grandTotal,
+      paidAmount,
+      dueAmount: Math.max(0, order.grandTotal - paidAmount),
+      paymentMethod,
+      walletId,
+      notes: `Converted from Sales Order #${order.orderNumber}. ${order.notes || ''}`,
+    });
+
+    if (invoice) {
+      setSalesOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'CONVERTED_TO_SALE', convertedSaleInvoiceId: invoice.id } : o));
+      showToast(language === 'bn' ? `সেলস অর্ডার সফলভাবে ইনভয়েজে রূপান্তরিত হয়েছে #${invoice.invoiceNumber}` : `Sales order converted to invoice #${invoice.invoiceNumber}`, 'success');
+      return invoice;
+    }
+    return null;
   };
 
   const convertPOToPurchaseBill = (poId: string, finalItems: PurchaseItem[], finalDiscount: number = 0, paidAmount: number = 0, walletId?: string, customBillNumber?: string): PurchaseInvoice | null => {
@@ -1785,6 +1914,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         purchaseReturns,
         purchaseOrders,
         quotations,
+        salesOrders,
         expiredReturnLogs,
         installmentSchemes,
         employees,
@@ -1981,6 +2111,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (Array.isArray(data.purchaseReturns)) setPurchaseReturns(data.purchaseReturns);
         if (Array.isArray(data.purchaseOrders)) setPurchaseOrders(data.purchaseOrders);
         if (Array.isArray(data.quotations)) setQuotations(data.quotations);
+        if (Array.isArray(data.salesOrders)) setSalesOrders(data.salesOrders);
         if (Array.isArray(data.expiredReturnLogs)) setExpiredReturnLogs(data.expiredReturnLogs);
         if (Array.isArray(data.installmentSchemes)) setInstallmentSchemes(data.installmentSchemes);
         if (Array.isArray(data.employees)) setEmployees(data.employees);
@@ -2227,6 +2358,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setPurchaseReturns(Array.isArray(data.purchaseReturns) ? data.purchaseReturns : []);
           setPurchaseOrders(Array.isArray(data.purchaseOrders) ? data.purchaseOrders : []);
           setQuotations(Array.isArray(data.quotations) ? data.quotations : []);
+          setSalesOrders(Array.isArray(data.salesOrders) ? data.salesOrders : []);
           setExpiredReturnLogs(Array.isArray(data.expiredReturnLogs) ? data.expiredReturnLogs : []);
           setInstallmentSchemes(Array.isArray(data.installmentSchemes) ? data.installmentSchemes : []);
           setEmployees(Array.isArray(data.employees) ? data.employees : []);
@@ -2288,6 +2420,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
           if (Array.isArray(data.quotations)) {
             setQuotations(prev => shouldMerge ? mergeEntitiesById(prev, data.quotations) : data.quotations);
+          }
+          if (Array.isArray(data.salesOrders)) {
+            setSalesOrders(prev => shouldMerge ? mergeEntitiesById(prev, data.salesOrders) : data.salesOrders);
           }
           if (Array.isArray(data.expiredReturnLogs)) {
             setExpiredReturnLogs(prev => shouldMerge ? mergeEntitiesById(prev, data.expiredReturnLogs) : data.expiredReturnLogs);
@@ -3373,7 +3508,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       dueAmount: data.dueAmount,
       paymentMethod: data.paymentMethod,
       walletId: data.walletId,
-      walletName: selectedWallet?.name || 'Cash',
+      walletName: selectedWallet?.name || (data.walletId === 'due' ? (language === 'bn' ? 'বাকী বিক্রয় (Credit)' : 'Due / Credit Sale') : 'Cash'),
       status,
       notes: data.notes,
       cashierName: creatorName,
@@ -4144,11 +4279,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     walletId: string;
     date: string;
     remarks: string;
-  }) => {
+  }): boolean => {
     const party = parties.find(p => p.id === data.partyId);
     const wallet = wallets.find(w => w.id === data.walletId);
     const voucherNo = `REC-2026-${500 + dayBookEntries.length + 1}`;
     const nowTime = new Date().toLocaleTimeString('en-US', { hour12: false });
+
+    if (!party) {
+      showToast(language === 'bn' ? 'কাস্টমার নির্বাচন করুন!' : 'Please select a customer!', 'error');
+      return false;
+    }
+    if (!wallet) {
+      showToast(language === 'bn' ? 'পেমেন্ট ওয়ালেট নির্বাচন করুন!' : 'Please select a payment wallet!', 'error');
+      return false;
+    }
+    if (!data.amount || data.amount <= 0) {
+      showToast(language === 'bn' ? 'সঠিক আদায়ের পরিমাণ (৳) লিখুন!' : 'Please enter a valid amount!', 'error');
+      return false;
+    }
+
+    // Customer due ceiling check (Customer balance or total due)
+    const maxDueAllowed = Math.max(Number(party.currentBalance || 0), getCustomerTotalDue(party, installmentSchemes));
+
+    if (maxDueAllowed <= 0) {
+      showToast(
+        language === 'bn'
+          ? `কাস্টমার ${party.name} এর কোনো বকেয়া নেই (বর্তমান বকেয়া ৳০)! বকেয়া ছাড়া টাকা আদায় করা যাবে না।`
+          : `Customer ${party.name} has no outstanding due (৳0)! Cannot collect payment without due.`,
+        'error'
+      );
+      return false;
+    }
+
+    if (data.amount > maxDueAllowed) {
+      showToast(
+        language === 'bn'
+          ? `⚠️ বকেয়ার চেয়ে বেশি টাকা আদায় করা যাবে না! কাস্টমারের মোট বকেয়া ৳${maxDueAllowed.toLocaleString()}। আপনি ৳${data.amount.toLocaleString()} আদায় করতে চেয়েছেন। সর্বোচ্চ ৳${maxDueAllowed.toLocaleString()} বা এর চেয়ে কম পরিমাণ টাকা আদায় করতে পারবেন।`
+          : `Cannot collect more than outstanding due! Total due is ৳${maxDueAllowed.toLocaleString()}, but attempted ৳${data.amount.toLocaleString()}. Maximum allowed is ৳${maxDueAllowed.toLocaleString()}.`,
+        'error'
+      );
+      return false;
+    }
 
     // 1. Decrease customer balance
     setParties(prev =>
@@ -4226,6 +4397,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ? `${party?.name} এর কাছ থেকে ৳${data.amount} জমা নেওয়া হয়েছে।`
         : `Collected ${formatCurrency(data.amount)} from ${party?.name}`
     );
+    return true;
   };
 
   // -------------------------------------------------------------
@@ -5090,10 +5262,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const voucherNo = `PAY-2026-${700 + dayBookEntries.length + 1}`;
     const nowTime = new Date().toLocaleTimeString('en-US', { hour12: false });
 
+    if (!supplier) {
+      showToast(
+        language === 'bn' ? 'সাপ্লায়ার/মহাজন নির্বাচন করুন!' : 'Please select a supplier!',
+        'error'
+      );
+      return false;
+    }
+
     // Validate supplier and wallet
     if (!wallet) {
       showToast(
         language === 'bn' ? 'পেমেন্ট ওয়ালেট নির্বাচন করুন!' : 'Please select a payment wallet!',
+        'error'
+      );
+      return false;
+    }
+
+    if (!data.amount || data.amount <= 0) {
+      showToast(
+        language === 'bn' ? 'সঠিক পরিশোধের পরিমাণ (৳) লিখুন!' : 'Please enter a valid payment amount!',
+        'error'
+      );
+      return false;
+    }
+
+    // Supplier payable due ceiling check
+    const supplierDue = Math.max(0, Number(supplier.currentBalance || 0));
+
+    if (supplierDue <= 0) {
+      showToast(
+        language === 'bn'
+          ? `সাপ্লায়ার ${supplier.name} এর কোনো বকেয়া পাওনা বিল নেই (দেনা ৳০)! দেনা ছাড়া টাকা পরিশোধ করা যাবে না।`
+          : `Supplier ${supplier.name} has no payable balance (৳0)! Cannot make payment when there is no payable balance.`,
+        'error'
+      );
+      return false;
+    }
+
+    if (data.amount > supplierDue) {
+      showToast(
+        language === 'bn'
+          ? `⚠️ মহাজন পাওনা বিলের চেয়ে বেশি টাকা পরিশোধ করা যাবে না! মোট বকেয়া ৳${supplierDue.toLocaleString()}। আপনি ৳${data.amount.toLocaleString()} পরিশোধ করতে চেয়েছেন। সর্বোচ্চ ৳${supplierDue.toLocaleString()} বা এর চেয়ে কম পরিশোধ করতে পারবেন।`
+          : `Cannot pay more than supplier payable due! Outstanding bill is ৳${supplierDue.toLocaleString()}, but attempted ৳${data.amount.toLocaleString()}. Maximum allowed is ৳${supplierDue.toLocaleString()}.`,
         'error'
       );
       return false;
@@ -6701,6 +6912,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deletedPurchaseInvoices,
         purchaseReturns,
         purchaseOrders,
+        salesOrders,
         quotations,
         expiredReturnLogs,
         installmentSchemes,
@@ -6791,6 +7003,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateQuotationStatus,
         convertQuotationToSale,
         deleteQuotation,
+        addSalesOrder,
+        updateSalesOrder,
+        updateSalesOrderStatus,
+        convertSalesOrderToSale,
+        deleteSalesOrder,
         createPurchaseReturn,
         deletePurchaseReturn,
         addExpiredReturnLog,

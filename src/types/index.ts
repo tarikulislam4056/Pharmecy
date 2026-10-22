@@ -563,6 +563,47 @@ export interface Quotation {
   createdAt: string;
 }
 
+export interface SalesOrderItem {
+  productId: string;
+  name: string;
+  nameBn?: string;
+  unit: UnitType;
+  unitPrice: number;
+  quantity: number;
+  discount: number;
+  discountType: 'percentage' | 'flat';
+  taxPercent: number;
+  total: number;
+  dosageForm?: string;
+  strength?: string;
+}
+
+export type SalesOrderStatus = 'PENDING' | 'PROCESSING' | 'APPROVED' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED' | 'CONVERTED_TO_SALE';
+
+export interface SalesOrder {
+  id: string;
+  orderNumber: string;
+  date: string;
+  deliveryDate?: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress?: string;
+  items: SalesOrderItem[];
+  subtotal: number;
+  discount: number;
+  discountType: 'percentage' | 'flat';
+  taxAmount: number;
+  grandTotal: number;
+  status: SalesOrderStatus;
+  notes?: string;
+  walletId?: string;
+  paidAmount?: number;
+  createdBy?: string;
+  convertedSaleInvoiceId?: string;
+  createdAt: string;
+}
+
 export type TransactionType =
   | 'SALE'
   | 'SALE_RETURN'
@@ -1023,6 +1064,7 @@ export type ViewTab =
   | 'daybook'
   | 'pos'
   | 'quotations'
+  | 'sales-orders'
   | 'sales-list'
   | 'sales-returns'
   | 'deleted-invoices'

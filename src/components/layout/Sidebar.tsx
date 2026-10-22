@@ -346,6 +346,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       >
                         <span>{language === 'bn' ? 'প্রাইস কোটেশন (Quotation)' : 'Price Quotation'}</span>
                       </button>
+                      {isTabAllowed(currentUser, 'sales-orders') && (
+                        <button
+                          type="button"
+                          onClick={() => handleSelectTab('sales-orders')}
+                          className={`w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-left transition-colors cursor-pointer ${
+                            activeTab === 'sales-orders' ? `${sidebarTheme.activeBg} font-bold` : `text-slate-700 dark:text-slate-300 transition-colors ${sidebarTheme.sidebarHover}`
+                          }`}
+                        >
+                          <span>{language === 'bn' ? 'সেলস অর্ডার (Sales Order)' : 'Sales Order'}</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleSelectTab('sales-returns')}
