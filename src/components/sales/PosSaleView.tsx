@@ -1747,7 +1747,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
                                 <span>| SKU: {prod.sku}</span>
                                 {prod.categoryName && <span>| Category: <span className="text-indigo-500 font-bold">{prod.categoryName}</span></span>}
                                 {prod.manufacturer && <span>| Brand: <span className="text-slate-600 dark:text-slate-300">{prod.manufacturer}</span></span>}
-                                {prod.generic && <span>| Generic: <span className="text-slate-500 italic">{prod.generic}</span></span>}
+                                {isPharmacyMode && prod.generic && <span>| Generic: <span className="text-slate-500 italic">{prod.generic}</span></span>}
                                 {prod.expDate && (
                                   <span className={expired ? 'text-rose-600 font-bold' : 'text-slate-400'}>
                                     | Exp: {prod.expDate}
@@ -2075,7 +2075,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
                                         <span>| SKU: {prod.sku}</span>
                                         {prod.categoryName && <span>| Cat: <span className="text-purple-500 font-bold">{prod.categoryName}</span></span>}
                                         {prod.manufacturer && <span>| Brand: <span className="text-slate-600 dark:text-slate-300">{prod.manufacturer}</span></span>}
-                                        {prod.generic && <span>| Generic: <span className="text-slate-500 italic">{prod.generic}</span></span>}
+                                        {isPharmacyMode && prod.generic && <span>| Generic: <span className="text-slate-500 italic">{prod.generic}</span></span>}
                                         {prod.expDate && (
                                           <span className={expired ? 'text-rose-600 font-bold' : ''}>
                                             | Exp: {prod.expDate}

@@ -17,14 +17,16 @@ export interface ExpiredReturnLog {
   productId: string;
   productName: string;
   sku: string;
+  barcode?: string;
+  batchNumber?: string;
+  purchaseInvoiceNo?: string;
+  expDate?: string;
   unit: UnitType;
   quantity: number;
   purchasePrice: number;
   totalValue: number;
   actionType: 'RETURN_SUPPLIER' | 'WRITE_OFF' | 'REPLACEMENT';
   notes?: string;
-  batchNumber?: string;
-  expDate?: string;
   createdBy?: string;
   completedBy?: string;
   contributors?: EntryContributor[];
@@ -1021,24 +1023,6 @@ export interface CashAdjustment {
   createdAt: string;
 }
 
-export interface ExpiredReturnLog {
-  id: string;
-  productId: string;
-  productName: string;
-  sku: string;
-  barcode?: string;
-  batchNumber?: string;
-  purchaseInvoiceNo?: string;
-  expDate?: string;
-  quantity: number;
-  unit: UnitType;
-  purchasePrice: number;
-  totalValue: number;
-  actionType: 'RETURN_SUPPLIER' | 'WRITE_OFF' | 'REPLACEMENT';
-  date: string;
-  notes?: string;
-  createdBy?: string;
-}
 
 export interface ActivityLog {
   id: string;

@@ -68,8 +68,11 @@ export const PurchaseListView: React.FC<PurchaseListViewProps> = ({
     exportSingleDeletedPurchaseToFile,
     showToast,
     currentUser,
+    companySettings,
   } = useApp();
   const { t } = useTranslation(language);
+
+  const isPharmacyMode = companySettings?.businessModule === 'pharmacy';
 
   const hasDeletePermission = canUserDelete(currentUser, 'purchase');
   const hasEditPermission = canUserEdit(currentUser, 'purchase');
@@ -86,6 +89,13 @@ export const PurchaseListView: React.FC<PurchaseListViewProps> = ({
 
   // Active View Tab
   const [viewMode, setViewMode] = useState<ViewMode>('bills');
+
+  // Automatically reset away from generic viewMode if not in pharmacy mode
+  useEffect(() => {
+    if (!isPharmacyMode && viewMode === 'generic') {
+      setViewMode('bills');
+    }
+  }, [isPharmacyMode, viewMode]);
 
   // Search & Filter states
   const [search, setSearch] = useState('');
@@ -1220,21 +1230,23 @@ export const PurchaseListView: React.FC<PurchaseListViewProps> = ({
           </span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setViewMode('generic')}
-          className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-2 ${
-            viewMode === 'generic'
-              ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-xs'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-          }`}
-        >
-          <Boxes className="w-4 h-4" />
-          <span>{language === 'bn' ? 'জেনেরিক অনুযায়ী রিপোর্ট' : 'Generic Report'}</span>
-          <span className="px-1.5 py-0.5 rounded-md text-[10px] bg-zinc-100 dark:bg-zinc-800 font-mono">
-            {genericWiseReport.length}
-          </span>
-        </button>
+        {isPharmacyMode && (
+          <button
+            type="button"
+            onClick={() => setViewMode('generic')}
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-2 ${
+              viewMode === 'generic'
+                ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+            }`}
+          >
+            <Boxes className="w-4 h-4" />
+            <span>{language === 'bn' ? 'জেনেরিক অনুযায়ী রিপোর্ট' : 'Generic Report'}</span>
+            <span className="px-1.5 py-0.5 rounded-md text-[10px] bg-zinc-100 dark:bg-zinc-800 font-mono">
+              {genericWiseReport.length}
+            </span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -1841,7 +1853,7 @@ export const PurchaseListView: React.FC<PurchaseListViewProps> = ({
       {/* ============================================================== */}
       {/* SUB-VIEW 3: GENERIC WISE PURCHASE REPORT */}
       {/* ============================================================== */}
-      {viewMode === 'generic' && (
+      {isPharmacyMode && viewMode === 'generic' && (
         <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-xs">
           <div className="p-3 bg-zinc-50 dark:bg-zinc-850 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
             <div className="font-bold text-xs text-zinc-800 dark:text-zinc-200 flex items-center gap-2">

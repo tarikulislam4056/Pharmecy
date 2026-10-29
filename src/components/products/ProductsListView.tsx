@@ -1065,7 +1065,11 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder={language === 'bn' ? 'নাম, SKU, বারকোড, জেনেরিক, ব্যাচ নং...' : 'Name, SKU, Barcode, Generic, Batch No...'}
+                placeholder={
+                  language === 'bn'
+                    ? (isPharmacyMode ? 'নাম, SKU, বারকোড, জেনেরিক, ব্যাচ নং...' : 'নাম, SKU, বারকোড, ব্র্যান্ড, ক্যাটাগরি...')
+                    : (isPharmacyMode ? 'Name, SKU, Barcode, Generic, Batch No...' : 'Name, SKU, Barcode, Brand, Category...')
+                }
                 className="w-full pl-8 pr-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs"
               />
             </div>

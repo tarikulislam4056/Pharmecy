@@ -118,7 +118,6 @@ export type PrintableDocumentType =
   | 'BARCODE_SHEET'
   | 'PRODUCT_LIST'
   | 'BATCH_TRACEABILITY_SLIP'
-  | 'BATCH_TRACEABILITY_SLIP'
   | 'WARRANTY_CARD'
   | 'SALES_ORDER';
 

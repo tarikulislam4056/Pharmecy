@@ -586,19 +586,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <button
                     type="button"
                     onClick={() => handleSelectTab('categories')}
-                    className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-slate-700 dark:text-slate-300 text-left transition-colors cursor-pointer ${sidebarTheme.sidebarHover}"
-                  >
-                    <span>{language === 'bn' ? 'নতুন ক্যাটেগরি (Category New)' : 'Category New'}</span>
-                    <Plus className="w-4 h-4 shrink-0" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSelectTab('categories')}
                     className={`w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-left transition-colors cursor-pointer ${
                       activeTab === 'categories' ? `${sidebarTheme.activeBg} font-bold` : `text-slate-700 dark:text-slate-300 transition-colors ${sidebarTheme.sidebarHover}`
                     }`}
                   >
-                    <span>{language === 'bn' ? 'ক্যাটেগরি তালিকা (Category List)' : 'Category List'}</span>
+                    <span>{language === 'bn' ? 'ক্যাটেগরি (Categories)' : 'Categories'}</span>
                   </button>
                   {companySettings.businessModule !== 'pharmacy' && (
                     <button
@@ -906,14 +898,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => handleHrSubClick('employees')}
                     className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-slate-700 dark:text-slate-300 hover:text-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-950/30 text-left transition-colors cursor-pointer"
                   >
-                    <span>Staff Directory ({staffCount})</span>
+                    <span>{language === 'bn' ? `স্টাফ ডিরেক্টরি (${staffCount})` : `Staff Directory (${staffCount})`}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleHrSubClick('payroll')}
                     className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-left transition-colors cursor-pointer"
                   >
-                    <span>Run Monthly Payroll</span>
+                    <span>{language === 'bn' ? 'মাসিক পে-রোল ও বেতন' : 'Run Monthly Payroll'}</span>
                     <Plus className="w-4 h-4 shrink-0" />
                   </button>
                   <button
@@ -921,35 +913,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => handleHrSubClick('advance')}
                     className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-slate-700 dark:text-slate-300 hover:text-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-950/30 text-left transition-colors cursor-pointer"
                   >
-                    <span>Advance Salary Voucher</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleHrSubClick('payroll')}
-                    className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-slate-700 dark:text-slate-300 hover:text-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-950/30 text-left transition-colors cursor-pointer"
-                  >
-                    <span>Monthly Salary Report</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleHrSubClick('employees')}
-                    className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-slate-700 dark:text-slate-300 hover:text-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-950/30 text-left transition-colors cursor-pointer"
-                  >
-                    <span>Active Employees ({activeStaffCount})</span>
+                    <span>{language === 'bn' ? 'অগ্রিম বেতন ভাউচার' : 'Advance Salary Voucher'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleHrSubClick('resigned')}
                     className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-slate-700 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-50/50 dark:hover:bg-rose-950/30 text-left transition-colors cursor-pointer"
                   >
-                    <span>Resigned/Ex-Staff ({resignedStaffCount})</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleHrSubClick('employees')}
-                    className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg font-semibold text-slate-700 dark:text-slate-300 hover:text-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-950/30 text-left transition-colors cursor-pointer"
-                  >
-                    <span>All Employees</span>
+                    <span>{language === 'bn' ? `প্রাক্তন স্টাফ (${resignedStaffCount})` : `Resigned/Ex-Staff (${resignedStaffCount})`}</span>
                   </button>
                 </div>
               )}

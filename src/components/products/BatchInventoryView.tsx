@@ -92,7 +92,10 @@ export const BatchInventoryView: React.FC = () => {
     updateProductBatches,
     showToast,
     currentUser,
+    companySettings,
   } = useApp();
+
+  const isPharmacyMode = companySettings?.businessModule === 'pharmacy';
 
   // Search and Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -1372,7 +1375,7 @@ export const BatchInventoryView: React.FC = () => {
                                   <div className="text-[11px] text-zinc-400 font-mono">
                                     SKU: {item.sku} {item.barcode && `• Barcode: ${item.barcode}`}
                                     {item.categoryName && ` • Cat: ${item.categoryName}`}
-                                    {item.generic && ` • Generic: ${item.generic}`}
+                                    {isPharmacyMode && item.generic && ` • Generic: ${item.generic}`}
                                   </div>
                                 </div>
                               </td>

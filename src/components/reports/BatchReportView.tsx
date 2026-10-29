@@ -81,6 +81,8 @@ export const BatchReportView: React.FC<BatchReportViewProps> = () => {
     showToast,
   } = useApp();
 
+  const isPharmacyMode = companySettings?.businessModule === 'pharmacy';
+
   // Filters State
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedBatchNumber, setSelectedBatchNumber] = useState<string>('ALL');
@@ -1910,7 +1912,7 @@ export const BatchReportView: React.FC<BatchReportViewProps> = () => {
                         <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
                           <span className="font-mono">{batch.sku}</span>
                           {batch.categoryName && <span>• {batch.categoryName}</span>}
-                          {batch.generic && <span>• {batch.generic}</span>}
+                          {isPharmacyMode && batch.generic && <span>• {batch.generic}</span>}
                         </div>
                       </td>
 
