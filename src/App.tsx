@@ -53,7 +53,7 @@ import { CheckCircle2, AlertCircle, Info, AlertTriangle, Code2, Phone, MapPin } 
 import { Party, PartyType, Product, PurchaseInvoice } from './types';
 
 const MainLayout: React.FC = () => {
-  const { activeTab, toastMessage, setActiveTab, currentUser, companySettings, showToast } = useApp();
+  const { activeTab, toastMessage, setActiveTab, currentUser, companySettings, showToast, language } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Modal States
@@ -199,7 +199,7 @@ const MainLayout: React.FC = () => {
 
   const handleOpenEditParty = (party: Party) => {
     if (!canUserEdit(currentUser, 'party')) {
-      showToast(companySettings.language === 'bn' ? 'আপনার পার্টি এডিট করার অনুমতি নেই।' : 'You do not have permission to edit parties.', 'error');
+      showToast(language === 'bn' ? 'আপনার পার্টি এডিট করার অনুমতি নেই।' : 'You do not have permission to edit parties.', 'error');
       return;
     }
     setPartyToEdit(party);
@@ -214,7 +214,7 @@ const MainLayout: React.FC = () => {
 
   const handleOpenEditProduct = (prod: Product) => {
     if (!canUserEdit(currentUser, 'product')) {
-      showToast(companySettings.language === 'bn' ? 'আপনার পণ্য এডিট করার অনুমতি নেই।' : 'You do not have permission to edit products.', 'error');
+      showToast(language === 'bn' ? 'আপনার পণ্য এডিট করার অনুমতি নেই।' : 'You do not have permission to edit products.', 'error');
       return;
     }
     setProductToEdit(prod);

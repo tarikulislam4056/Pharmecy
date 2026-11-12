@@ -3642,16 +3642,15 @@ export const PrintInvoiceModal: React.FC = () => {
                         })
                       ) : (
                         <tr>
-                          <td colSpan={11} className="py-8 text-center text-zinc-500 font-medium">No products to display.</td>
+                          <td colSpan={15} className="py-8 text-center text-zinc-500 font-medium">No products to display.</td>
                         </tr>
                       )}
                     </tbody>
                     <tfoot>
                       <tr className="border-t-2 border-zinc-900 font-bold text-black" style={{ backgroundColor: '#f4f4f5' }}>
-                        <td colSpan={9} className="py-2.5 px-3 text-right">TOTAL INVENTORY SUMMARY:</td>
-                        <td className="py-2.5 px-2 text-center font-mono">{data.totalUnits?.toLocaleString() || 0}</td>
-                        <td colSpan={2}></td>
-                        <td className="py-2.5 px-2 text-right font-mono text-emerald-800">৳ {Number(data.totalCostValue || 0).toLocaleString()}</td>
+                        <td colSpan={13} className="py-2.5 px-3 text-right uppercase tracking-wider font-bold">TOTAL INVENTORY SUMMARY:</td>
+                        <td className="py-2.5 px-0.5 text-center font-mono font-bold text-black">{data.totalUnits?.toLocaleString() || 0}</td>
+                        <td className="py-2.5 px-0.5 text-right font-mono font-bold text-emerald-800 whitespace-nowrap">৳ {Number(data.totalCostValue || 0).toLocaleString()}</td>
                       </tr>
                     </tfoot>
                   </table>
