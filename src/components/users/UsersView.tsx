@@ -169,9 +169,17 @@ export const UsersView: React.FC = () => {
       setSubPermissions(prev => {
         let filtered = prev.filter(p => p !== actionId);
         if (actionId === 'CAN_DELETE') {
-          filtered = filtered.filter(p => !['SALES_DELETE', 'PURCHASE_DELETE', 'PRODUCT_DELETE', 'USER_DELETE'].includes(p));
+          filtered = filtered.filter(p => ![
+            'SALES_DELETE', 'PURCHASE_DELETE', 'PRODUCT_DELETE', 'USER_DELETE',
+            'MEDICINE_DELETE', 'SALES_ORDER_DELETE', 'HR_DELETE', 'PARTY_DELETE',
+            'EXPENSE_DELETE', 'FINANCE_DELETE'
+          ].includes(p));
         } else if (actionId === 'CAN_EDIT') {
-          filtered = filtered.filter(p => !['SALES_EDIT', 'PURCHASE_EDIT', 'PRODUCT_EDIT', 'USER_EDIT'].includes(p));
+          filtered = filtered.filter(p => ![
+            'SALES_EDIT', 'PURCHASE_EDIT', 'PRODUCT_EDIT', 'USER_EDIT',
+            'MEDICINE_EDIT', 'SALES_ORDER_EDIT', 'HR_EDIT', 'PARTY_EDIT',
+            'EXPENSE_EDIT', 'FINANCE_EDIT'
+          ].includes(p));
         } else if (actionId === 'CAN_RETURN') {
           filtered = filtered.filter(p => !['SALES_RETURN', 'PURCHASE_RETURN'].includes(p));
         }
@@ -183,11 +191,19 @@ export const UsersView: React.FC = () => {
         const next = [...prev];
         if (!next.includes(actionId)) next.push(actionId);
         if (actionId === 'CAN_DELETE') {
-          ['SALES_DELETE', 'PURCHASE_DELETE', 'PRODUCT_DELETE'].forEach(p => {
+          [
+            'SALES_DELETE', 'PURCHASE_DELETE', 'PRODUCT_DELETE', 'USER_DELETE',
+            'MEDICINE_DELETE', 'SALES_ORDER_DELETE', 'HR_DELETE', 'PARTY_DELETE',
+            'EXPENSE_DELETE', 'FINANCE_DELETE'
+          ].forEach(p => {
             if (!next.includes(p)) next.push(p);
           });
         } else if (actionId === 'CAN_EDIT') {
-          ['SALES_EDIT', 'PURCHASE_EDIT', 'PRODUCT_EDIT'].forEach(p => {
+          [
+            'SALES_EDIT', 'PURCHASE_EDIT', 'PRODUCT_EDIT', 'USER_EDIT',
+            'MEDICINE_EDIT', 'SALES_ORDER_EDIT', 'HR_EDIT', 'PARTY_EDIT',
+            'EXPENSE_EDIT', 'FINANCE_EDIT'
+          ].forEach(p => {
             if (!next.includes(p)) next.push(p);
           });
         } else if (actionId === 'CAN_RETURN') {
@@ -231,9 +247,17 @@ export const UsersView: React.FC = () => {
       newPerms = newPerms.filter(p => p !== actionType);
       newSubPerms = newSubPerms.filter(p => p !== actionType);
       if (actionType === 'CAN_DELETE') {
-        newSubPerms = newSubPerms.filter(p => !['SALES_DELETE', 'PURCHASE_DELETE', 'PRODUCT_DELETE', 'USER_DELETE'].includes(p));
+        newSubPerms = newSubPerms.filter(p => ![
+          'SALES_DELETE', 'PURCHASE_DELETE', 'PRODUCT_DELETE', 'USER_DELETE',
+          'MEDICINE_DELETE', 'SALES_ORDER_DELETE', 'HR_DELETE', 'PARTY_DELETE',
+          'EXPENSE_DELETE', 'FINANCE_DELETE'
+        ].includes(p));
       } else if (actionType === 'CAN_EDIT') {
-        newSubPerms = newSubPerms.filter(p => !['SALES_EDIT', 'PURCHASE_EDIT', 'PRODUCT_EDIT', 'USER_EDIT'].includes(p));
+        newSubPerms = newSubPerms.filter(p => ![
+          'SALES_EDIT', 'PURCHASE_EDIT', 'PRODUCT_EDIT', 'USER_EDIT',
+          'MEDICINE_EDIT', 'SALES_ORDER_EDIT', 'HR_EDIT', 'PARTY_EDIT',
+          'EXPENSE_EDIT', 'FINANCE_EDIT'
+        ].includes(p));
       } else if (actionType === 'CAN_RETURN') {
         newSubPerms = newSubPerms.filter(p => !['SALES_RETURN', 'PURCHASE_RETURN'].includes(p));
       }
@@ -242,11 +266,19 @@ export const UsersView: React.FC = () => {
       if (!newPerms.includes(actionType)) newPerms.push(actionType);
       if (!newSubPerms.includes(actionType)) newSubPerms.push(actionType);
       if (actionType === 'CAN_DELETE') {
-        ['SALES_DELETE', 'PURCHASE_DELETE', 'PRODUCT_DELETE'].forEach(p => {
+        [
+          'SALES_DELETE', 'PURCHASE_DELETE', 'PRODUCT_DELETE', 'USER_DELETE',
+          'MEDICINE_DELETE', 'SALES_ORDER_DELETE', 'HR_DELETE', 'PARTY_DELETE',
+          'EXPENSE_DELETE', 'FINANCE_DELETE'
+        ].forEach(p => {
           if (!newSubPerms.includes(p)) newSubPerms.push(p);
         });
       } else if (actionType === 'CAN_EDIT') {
-        ['SALES_EDIT', 'PURCHASE_EDIT', 'PRODUCT_EDIT'].forEach(p => {
+        [
+          'SALES_EDIT', 'PURCHASE_EDIT', 'PRODUCT_EDIT', 'USER_EDIT',
+          'MEDICINE_EDIT', 'SALES_ORDER_EDIT', 'HR_EDIT', 'PARTY_EDIT',
+          'EXPENSE_EDIT', 'FINANCE_EDIT'
+        ].forEach(p => {
           if (!newSubPerms.includes(p)) newSubPerms.push(p);
         });
       } else if (actionType === 'CAN_RETURN') {

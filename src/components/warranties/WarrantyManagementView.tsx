@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { printElement } from '../../utils/printHelper';
-import { canUserDelete } from '../../utils/permissions';
+import { canUserDelete, canUserEdit } from '../../utils/permissions';
 import { DatePeriodFilter } from '../common/DatePeriodFilter';
 import {
   Product,
@@ -837,33 +837,37 @@ export const WarrantyManagementView: React.FC = () => {
                             >
                               <Wrench className="w-3.5 h-3.5" />
                             </button>
-                            <button
-                              onClick={() => {
-                                setEditingRecord(rec);
-                                setIsRecordModalOpen(true);
-                              }}
-                              title={isBn ? 'সম্পাদনা করুন' : 'Edit Record'}
-                              className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors cursor-pointer"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (!canUserDelete(currentUser, 'product')) {
-                                  showToast(isBn ? 'আপনার ওয়ারেন্টি রেকর্ড মুছে ফেলার অনুমতি নেই' : 'You do not have permission to delete warranty records', 'error');
-                                  return;
-                                }
-                                setDeleteConfirmItem({
-                                  id: rec.id,
-                                  type: 'record',
-                                  title: `${rec.warrantyCode} - ${rec.productName} (${rec.customerName})`,
-                                });
-                              }}
-                              title={isBn ? 'মুছে ফেলুন' : 'Delete'}
-                              className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {canUserEdit(currentUser, 'product') && (
+                              <button
+                                onClick={() => {
+                                  setEditingRecord(rec);
+                                  setIsRecordModalOpen(true);
+                                }}
+                                title={isBn ? 'সম্পাদনা করুন' : 'Edit Record'}
+                                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors cursor-pointer"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {canUserDelete(currentUser, 'product') && (
+                              <button
+                                onClick={() => {
+                                  if (!canUserDelete(currentUser, 'product')) {
+                                    showToast(isBn ? 'আপনার ওয়ারেন্টি রেকর্ড মুছে ফেলার অনুমতি নেই' : 'You do not have permission to delete warranty records', 'error');
+                                    return;
+                                  }
+                                  setDeleteConfirmItem({
+                                    id: rec.id,
+                                    type: 'record',
+                                    title: `${rec.warrantyCode} - ${rec.productName} (${rec.customerName})`,
+                                  });
+                                }}
+                                title={isBn ? 'মুছে ফেলুন' : 'Delete'}
+                                className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1281,32 +1285,36 @@ export const WarrantyManagementView: React.FC = () => {
                 <p className="text-xs text-slate-600 dark:text-slate-400">{pol.terms}</p>
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    onClick={() => {
-                      setEditingPolicy(pol);
-                      setIsPolicyModalOpen(true);
-                    }}
-                    className="p-1 text-slate-600 hover:text-indigo-600 cursor-pointer"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!canUserDelete(currentUser, 'product')) {
-                        showToast(isBn ? 'আপনার ওয়ারেন্টি পলিসি ডিলিট করার অনুমতি নেই' : 'You do not have permission to delete warranty policies', 'error');
-                        return;
-                      }
-                      setDeleteConfirmItem({
-                        id: pol.id,
-                        type: 'policy',
-                        title: isBn ? pol.nameBn || pol.name : pol.name,
-                      });
-                    }}
-                    title={isBn ? 'ডিলিট পলিসি' : 'Delete Policy'}
-                    className="p-1 text-slate-600 hover:text-rose-600 cursor-pointer transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canUserEdit(currentUser, 'product') && (
+                    <button
+                      onClick={() => {
+                        setEditingPolicy(pol);
+                        setIsPolicyModalOpen(true);
+                      }}
+                      className="p-1 text-slate-600 hover:text-indigo-600 cursor-pointer"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                  )}
+                  {canUserDelete(currentUser, 'product') && (
+                    <button
+                      onClick={() => {
+                        if (!canUserDelete(currentUser, 'product')) {
+                          showToast(isBn ? 'আপনার ওয়ারেন্টি পলিসি ডিলিট করার অনুমতি নেই' : 'You do not have permission to delete warranty policies', 'error');
+                          return;
+                        }
+                        setDeleteConfirmItem({
+                          id: pol.id,
+                          type: 'policy',
+                          title: isBn ? pol.nameBn || pol.name : pol.name,
+                        });
+                      }}
+                      title={isBn ? 'ডিলিট পলিসি' : 'Delete Policy'}
+                      className="p-1 text-slate-600 hover:text-rose-600 cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

@@ -46,14 +46,14 @@ import { CashAdjustmentModal } from './components/finance/CashAdjustmentModal';
 import { KeyboardShortcutsModal } from './components/common/KeyboardShortcutsModal';
 
 import { AccessDeniedView } from './components/common/AccessDeniedView';
-import { isTabAllowed } from './utils/permissions';
+import { isTabAllowed, canUserEdit } from './utils/permissions';
 
 // Toast and Icons
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, Code2, Phone, MapPin } from 'lucide-react';
 import { Party, PartyType, Product, PurchaseInvoice } from './types';
 
 const MainLayout: React.FC = () => {
-  const { activeTab, toastMessage, setActiveTab, currentUser, companySettings } = useApp();
+  const { activeTab, toastMessage, setActiveTab, currentUser, companySettings, showToast } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Modal States
@@ -198,6 +198,10 @@ const MainLayout: React.FC = () => {
   };
 
   const handleOpenEditParty = (party: Party) => {
+    if (!canUserEdit(currentUser, 'party')) {
+      showToast(companySettings.language === 'bn' ? 'আপনার পার্টি এডিট করার অনুমতি নেই।' : 'You do not have permission to edit parties.', 'error');
+      return;
+    }
     setPartyToEdit(party);
     setPartyDefaultType(party.type);
     setIsPartyModalOpen(true);
@@ -209,6 +213,10 @@ const MainLayout: React.FC = () => {
   };
 
   const handleOpenEditProduct = (prod: Product) => {
+    if (!canUserEdit(currentUser, 'product')) {
+      showToast(companySettings.language === 'bn' ? 'আপনার পণ্য এডিট করার অনুমতি নেই।' : 'You do not have permission to edit products.', 'error');
+      return;
+    }
     setProductToEdit(prod);
     setIsProductModalOpen(true);
   };

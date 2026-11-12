@@ -765,6 +765,10 @@ export const PurchaseOrdersView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => {
+                                if (!canUserDelete(currentUser, 'purchase')) {
+                                  showToast(language === 'bn' ? 'আপনার ক্রয় আদেশ ডিলিট করার অনুমতি নেই।' : 'You do not have permission to delete purchase orders.', 'error');
+                                  return;
+                                }
                                 if (confirm(language === 'bn' ? 'আপনি কি নিশ্চিত এই ক্রয় আদেশটি (PO) মুছে ফেলতে চান?' : 'Are you sure you want to delete this purchase order?')) {
                                   deletePurchaseOrder(po.id);
                                 }

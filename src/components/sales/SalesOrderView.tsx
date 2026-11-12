@@ -812,10 +812,16 @@ export const SalesOrderView: React.FC = () => {
                           <ArrowRight className="w-3 h-3" />
                         </button>
                       )}
-                      {canUserDelete(currentUser) && (
+                      {canUserDelete(currentUser, 'sales-order') && (
                         <button
                           type="button"
-                          onClick={() => deleteSalesOrder(ord.id)}
+                          onClick={() => {
+                            if (!canUserDelete(currentUser, 'sales-order')) {
+                              showToast(language === 'bn' ? 'আপনার সেলস অর্ডার ডিলিট করার অনুমতি নেই।' : 'You do not have permission to delete sales orders.', 'error');
+                              return;
+                            }
+                            deleteSalesOrder(ord.id);
+                          }}
                           className="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded cursor-pointer"
                           title="Delete Order"
                         >

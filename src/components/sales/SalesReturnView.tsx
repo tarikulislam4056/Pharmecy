@@ -29,7 +29,7 @@ export const SalesReturnView: React.FC<SalesReturnViewProps> = ({ initialInvoice
   const { t } = useTranslation(language);
 
   const hasDeletePermission = canUserDelete(currentUser, 'sales');
-  const hasReturnPermission = canUserReturn(currentUser);
+  const hasReturnPermission = canUserReturn(currentUser, 'sales');
 
   const customers = parties.filter(p => p.type === 'CUSTOMER');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('ALL');

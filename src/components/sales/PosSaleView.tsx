@@ -59,6 +59,7 @@ interface SaleRowItem {
   expDate?: string;
   strength?: string;
   manufacturer?: string;
+  purchasePrice?: number;
 }
 
 interface SplitPaymentRow {
@@ -434,6 +435,10 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
   }, [products, catalogSearch, catalogCategory]);
 
   // Calculation of Table Items Total
+  const grossSubtotal = useMemo(() => {
+    return items.reduce((sum, item) => sum + ((item.unitPrice || 0) * (item.quantity || 0)), 0);
+  }, [items]);
+
   const itemsSubtotal = useMemo(() => {
     return items.reduce((sum, item) => sum + (item.total || 0), 0);
   }, [items]);
@@ -604,6 +609,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
           dosage: product.dosageSchedule,
           dosageSchedule: product.dosageSchedule,
           manufacturer: product.manufacturer,
+          purchasePrice: firstValidBatch?.purchasePrice ?? product.purchasePrice ?? 0,
         };
       });
 
@@ -1131,7 +1137,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
         nameBn: vi.nameBn,
         barcode: vi.barcode,
         unit: vi.unit,
-        purchasePrice: 0,
+        purchasePrice: Number(vi.purchasePrice || products.find(p => p.id === vi.productId)?.purchasePrice || 0),
         unitPrice: Number(vi.unitPrice),
         quantity: Number(vi.quantity),
         discount: Number(vi.discount),
@@ -1159,7 +1165,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
         customerPhone: selectedCustomer.phone || '',
         customerAddress: (selectedCustomer as any)?.address || '',
         items: cartItems,
-        subtotal: itemsSubtotal,
+        subtotal: grossSubtotal,
         discount: totalDiscount,
         discountType: 'flat',
         vatAmount: 0,
@@ -1264,7 +1270,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
       nameBn: vi.nameBn,
       barcode: vi.barcode,
       unit: vi.unit,
-      purchasePrice: 0,
+      purchasePrice: Number(vi.purchasePrice || products.find(p => p.id === vi.productId)?.purchasePrice || 0),
       unitPrice: Number(vi.unitPrice),
       quantity: Number(vi.quantity),
       discount: Number(vi.discount),
@@ -1291,7 +1297,7 @@ export const PosSaleView: React.FC<PosSaleViewProps> = ({ onOpenNewCustomerModal
       customerPhone: selectedCustomer?.phone || '',
       customerAddress: (selectedCustomer as any)?.address || '',
       items: cartItems,
-      subtotal: itemsSubtotal,
+      subtotal: grossSubtotal,
       discount: Number((totalDiscount + overallDiscountAmount).toFixed(2)),
       discountType: 'flat',
       vatAmount: 0,

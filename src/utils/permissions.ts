@@ -324,9 +324,12 @@ export const hasPermission = (user: UserAccount | null | undefined, permissionId
 /**
  * Check if a user has permission to DELETE records (e.g. sales invoices, products, purchases)
  */
-export const canUserDelete = (user: UserAccount | null | undefined, module?: 'sales' | 'purchase' | 'product' | 'user' | string): boolean => {
-  if (!user) return true;
-  if (user.role === 'ADMIN' || user.role === 'MANAGER' || user.permissions?.includes('ALL')) {
+export const canUserDelete = (
+  user: UserAccount | null | undefined,
+  module?: 'sales' | 'purchase' | 'product' | 'user' | 'medicine' | 'sales-order' | 'expense' | 'hr' | 'party' | 'accounts' | 'finance' | string
+): boolean => {
+  if (!user) return false;
+  if (user.role === 'ADMIN' || user.permissions?.includes('ALL')) {
     return true;
   }
   if (user.permissions?.includes('CAN_DELETE') || user.subPermissions?.includes('CAN_DELETE')) {
@@ -350,13 +353,28 @@ export const canUserDelete = (user: UserAccount | null | undefined, module?: 'sa
   if (module === 'sales-order' && (user.subPermissions?.includes('SALES_ORDER_DELETE') || user.permissions?.includes('SALES_ORDER_DELETE'))) {
     return true;
   }
+  if (module === 'hr' && (user.subPermissions?.includes('HR_DELETE') || user.permissions?.includes('HR_DELETE'))) {
+    return true;
+  }
+  if (module === 'party' && (user.subPermissions?.includes('PARTY_DELETE') || user.permissions?.includes('PARTY_DELETE'))) {
+    return true;
+  }
+  if (module === 'expense' && (user.subPermissions?.includes('EXPENSE_DELETE') || user.permissions?.includes('EXPENSE_DELETE'))) {
+    return true;
+  }
+  if ((module === 'accounts' || module === 'finance') && (user.subPermissions?.includes('FINANCE_DELETE') || user.permissions?.includes('FINANCE_DELETE'))) {
+    return true;
+  }
   return false;
 };
 
 /**
  * Check if a user has permission to EDIT records (e.g. sales invoices, products, purchases)
  */
-export const canUserEdit = (user: UserAccount | null | undefined, module?: 'sales' | 'purchase' | 'product' | 'user' | 'medicine' | 'sales-order' | string): boolean => {
+export const canUserEdit = (
+  user: UserAccount | null | undefined,
+  module?: 'sales' | 'purchase' | 'product' | 'user' | 'medicine' | 'sales-order' | 'expense' | 'hr' | 'party' | 'accounts' | 'finance' | string
+): boolean => {
   if (!user) return false;
   if (user.role === 'ADMIN' || user.permissions?.includes('ALL')) {
     return true;
@@ -382,18 +400,36 @@ export const canUserEdit = (user: UserAccount | null | undefined, module?: 'sale
   if (module === 'medicine' && (user.subPermissions?.includes('MEDICINE_EDIT') || user.permissions?.includes('MEDICINE_EDIT'))) {
     return true;
   }
+  if (module === 'hr' && (user.subPermissions?.includes('HR_EDIT') || user.permissions?.includes('HR_EDIT'))) {
+    return true;
+  }
+  if (module === 'party' && (user.subPermissions?.includes('PARTY_EDIT') || user.permissions?.includes('PARTY_EDIT'))) {
+    return true;
+  }
+  if (module === 'expense' && (user.subPermissions?.includes('EXPENSE_EDIT') || user.permissions?.includes('EXPENSE_EDIT'))) {
+    return true;
+  }
+  if ((module === 'accounts' || module === 'finance') && (user.subPermissions?.includes('FINANCE_EDIT') || user.permissions?.includes('FINANCE_EDIT'))) {
+    return true;
+  }
   return false;
 };
 
 /**
  * Check if a user has permission to process RETURNS (sales return or purchase return)
  */
-export const canUserReturn = (user: UserAccount | null | undefined): boolean => {
+export const canUserReturn = (user: UserAccount | null | undefined, module?: 'sales' | 'purchase' | string): boolean => {
   if (!user) return false;
   if (user.role === 'ADMIN' || user.permissions?.includes('ALL')) {
     return true;
   }
   if (user.permissions?.includes('CAN_RETURN') || user.subPermissions?.includes('CAN_RETURN')) {
+    return true;
+  }
+  if (module === 'sales' && (user.subPermissions?.includes('SALES_RETURN') || user.permissions?.includes('SALES_RETURN'))) {
+    return true;
+  }
+  if (module === 'purchase' && (user.subPermissions?.includes('PURCHASE_RETURN') || user.permissions?.includes('PURCHASE_RETURN'))) {
     return true;
   }
   if (

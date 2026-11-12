@@ -353,7 +353,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         invoiceDiscount = invoice.subtotal * (invoice.discount / 100);
       }
       
-      const revenue = invoice.subtotal - invoiceDiscount;
+      const revenue = (invoice.grandTotal !== undefined && invoice.grandTotal !== null)
+        ? Math.max(0, invoice.grandTotal - (invoice.vatAmount || 0) - (invoice.deliveryFee || 0))
+        : Math.max(0, invoice.subtotal - invoiceDiscount);
       return sum + (revenue - invoiceCogs);
     }, 0);
   }, [filteredSales, products]);

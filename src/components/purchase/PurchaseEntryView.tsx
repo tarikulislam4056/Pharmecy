@@ -241,6 +241,10 @@ export const PurchaseEntryView: React.FC<PurchaseEntryViewProps> = ({
   }, [products, catalogSearch, catalogCategory]);
 
   // Calculation of Table Items Total
+  const grossSubtotal = useMemo(() => {
+    return items.reduce((sum, item) => sum + ((item.purchasePrice || 0) * (item.quantity || 0)), 0);
+  }, [items]);
+
   const itemsSubtotal = useMemo(() => {
     return items.reduce((sum, item) => sum + (item.total || 0), 0);
   }, [items]);
@@ -677,7 +681,7 @@ export const PurchaseEntryView: React.FC<PurchaseEntryViewProps> = ({
       billNumber: trimmedInvoiceNo || undefined,
       supplierInvoiceNo: trimmedInvoiceNo || undefined,
       items: purchaseItems,
-      subtotal: itemsSubtotal,
+      subtotal: grossSubtotal,
       discount: totalDiscount,
       taxAmount: 0,
       grandTotal: totalAmount,

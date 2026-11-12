@@ -116,7 +116,7 @@ export const SalesListView: React.FC<SalesListViewProps> = ({
   // Granular Permission Checks for current logged in user
   const hasDeletePermission = canUserDelete(currentUser, 'sales');
   const hasEditPermission = canUserEdit(currentUser, 'sales');
-  const hasReturnPermission = canUserReturn(currentUser);
+  const hasReturnPermission = canUserReturn(currentUser, 'sales');
 
   // Helper to resolve creator/cashier information
   const getCreatorInfo = (inv: SaleInvoice) => {

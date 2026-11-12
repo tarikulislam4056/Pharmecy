@@ -76,7 +76,7 @@ export const PurchaseListView: React.FC<PurchaseListViewProps> = ({
 
   const hasDeletePermission = canUserDelete(currentUser, 'purchase');
   const hasEditPermission = canUserEdit(currentUser, 'purchase');
-  const hasReturnPermission = canUserReturn(currentUser);
+  const hasReturnPermission = canUserReturn(currentUser, 'purchase');
 
   // Sub-Tab Switcher: 'active' vs 'deleted'
   const [currentSubTab, setCurrentSubTab] = useState<'active' | 'deleted'>(initialSubTab);
@@ -744,9 +744,9 @@ export const PurchaseListView: React.FC<PurchaseListViewProps> = ({
             date: p.date,
             billNumber: p.billNumber,
             supplierName: suppliers.find(s => s.id === p.supplierId)?.name || 'Unknown',
-            totalAmount: p.totalAmount,
+            totalAmount: p.grandTotal,
             paidAmount: p.paidAmount,
-            dueAmount: p.totalAmount - p.paidAmount
+            dueAmount: p.dueAmount
           })),
           totals: {
             totalAmount: totalPurchaseSum,

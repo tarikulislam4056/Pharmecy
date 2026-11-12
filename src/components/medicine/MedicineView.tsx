@@ -348,6 +348,9 @@ export const MedicineView: React.FC = () => {
 
   const { t } = useTranslation(language);
 
+  const hasEditPermission = canUserEdit(currentUser, 'medicine');
+  const hasDeletePermission = canUserDelete(currentUser, 'medicine');
+
   // Top Section Mode: 'diseases' (রোগ অনুযায়ী ঔষধ ও সেবনবিধি) vs 'categories' (ক্যাটাগরি তালিকা) vs 'master' (রোগের তালিকা ও প্রোটোকল মাস্টার)
   const [activeSubView, setActiveSubView] = useState<'diseases' | 'categories' | 'master'>('diseases');
 
@@ -447,6 +450,10 @@ export const MedicineView: React.FC = () => {
 
   // Delete disease category
   const handleDeleteCategory = (catId: string) => {
+    if (!hasDeletePermission) {
+      showToast(language === 'bn' ? 'ক্যাটাগরি ডিলিট করার অনুমতি আপনার নেই।' : 'You do not have permission to delete categories.', 'error');
+      return;
+    }
     if (catId === 'ALL') {
       showToast(language === 'bn' ? '"সকল রোগ" ফিল্টারটি ডিলিট করা সম্ভব নয়!' : 'Cannot delete "All" category!', 'error');
       return;
@@ -471,6 +478,10 @@ export const MedicineView: React.FC = () => {
 
   // Reset categories to default
   const handleResetCategories = () => {
+    if (!hasDeletePermission) {
+      showToast(language === 'bn' ? 'ক্যাটাগরি রিস্টোর করার অনুমতি আপনার নেই।' : 'You do not have permission to reset categories.', 'error');
+      return;
+    }
     if (window.confirm(language === 'bn' ? 'আপনি কি ক্যাটাগরি তালিকা ডিফল্ট অবস্থায় রিস্টোর করতে চান?' : 'Restore default categories?')) {
       setDiseaseCategories(COMMON_DISEASE_CATEGORIES);
       setSelectedDiseaseCategory('ALL');
@@ -672,6 +683,10 @@ export const MedicineView: React.FC = () => {
 
   // Open Disease Master Modal
   const handleOpenAddDiseaseModal = () => {
+    if (!hasEditPermission) {
+      showToast(language === 'bn' ? 'রোগের তালিকা যোগ করার অনুমতি আপনার নেই।' : 'You do not have permission to add diseases.', 'error');
+      return;
+    }
     setEditingDisease(null);
     setDiseaseFormData({
       id: `dis-${Date.now()}`,
@@ -700,6 +715,10 @@ export const MedicineView: React.FC = () => {
   };
 
   const handleOpenEditDiseaseModal = (dis: DiseaseMasterEntry) => {
+    if (!hasEditPermission) {
+      showToast(language === 'bn' ? 'রোগের তথ্য সম্পাদনা করার অনুমতি আপনার নেই।' : 'You do not have permission to edit diseases.', 'error');
+      return;
+    }
     setEditingDisease(dis);
     setDiseaseFormData(JSON.parse(JSON.stringify(dis)));
     setIsDiseaseModalOpen(true);
@@ -708,6 +727,10 @@ export const MedicineView: React.FC = () => {
   // Save Disease Master Entry
   const handleSaveDiseaseMaster = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasEditPermission) {
+      showToast(language === 'bn' ? 'রোগের তথ্য সংরক্ষণের অনুমতি আপনার নেই।' : 'You do not have permission to save disease changes.', 'error');
+      return;
+    }
     if (!diseaseFormData.diseaseNameBn.trim() && !diseaseFormData.diseaseName.trim()) {
       showToast(language === 'bn' ? 'রোগের নাম লিখুন!' : 'Enter disease name!', 'warning');
       return;
@@ -735,6 +758,10 @@ export const MedicineView: React.FC = () => {
 
   // Delete Disease Master Entry
   const handleDeleteDisease = (id: string, name: string) => {
+    if (!hasDeletePermission) {
+      showToast(language === 'bn' ? 'রোগের রেকর্ড মুছে ফেলার অনুমতি আপনার নেই।' : 'You do not have permission to delete disease entries.', 'error');
+      return;
+    }
     if (window.confirm(language === 'bn' ? `আপনি কি নিশ্চিতভাবে "${name}" রোগ মাস্টার রেকর্ড মুছে ফেলতে চান?` : `Delete disease entry "${name}"?`)) {
       setDiseaseMaster(prev => prev.filter(d => d.id !== id));
       showToast(language === 'bn' ? 'রোগ মাস্টার রেকর্ড মুছে ফেলা হয়েছে!' : 'Disease entry deleted!', 'info');
@@ -743,6 +770,10 @@ export const MedicineView: React.FC = () => {
 
   // Reset Disease Master to default
   const handleResetDiseaseMaster = () => {
+    if (!hasDeletePermission) {
+      showToast(language === 'bn' ? 'রোগের তালিকা রিস্টোর করার অনুমতি আপনার নেই।' : 'You do not have permission to reset disease master.', 'error');
+      return;
+    }
     if (window.confirm(language === 'bn' ? 'আপনি কি ডিফল্ট ১৬টি রোগের মাস্টার সেবনবিধি ডাটা রিস্টোর করতে চান?' : 'Restore default 16 disease master entries?')) {
       setDiseaseMaster(INITIAL_DISEASE_MASTER);
       showToast(language === 'bn' ? 'ডিফল্ট রোগ মাস্টার সেবনবিধি রিস্টোর করা হয়েছে!' : 'Default disease master restored!', 'success');
@@ -1192,15 +1223,17 @@ export const MedicineView: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditDiseaseModal(dis)}
-                        className="p-2 text-slate-600 hover:text-purple-600 dark:text-slate-400 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 rounded-xl transition-colors cursor-pointer text-xs font-bold flex items-center gap-1 border border-slate-200 dark:border-slate-700"
-                        title="রোগ ও ঔষধের সেবনবিধি সম্পাদনা করুন"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>এডিট</span>
-                      </button>
+                      {hasEditPermission && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditDiseaseModal(dis)}
+                          className="p-2 text-slate-600 hover:text-purple-600 dark:text-slate-400 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 rounded-xl transition-colors cursor-pointer text-xs font-bold flex items-center gap-1 border border-slate-200 dark:border-slate-700"
+                          title="রোগ ও ঔষধের সেবনবিধি সম্পাদনা করুন"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>এডিট</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1557,8 +1590,8 @@ export const MedicineView: React.FC = () => {
                                 <span>ঔষধ দেখুন</span>
                               </button>
 
-                              {/* Delete button (if not ALL) */}
-                              {!isAll ? (
+                              {/* Delete button (if not ALL and has delete permission) */}
+                              {!isAll && hasDeletePermission ? (
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteCategory(cat.id)}
@@ -1669,22 +1702,26 @@ export const MedicineView: React.FC = () => {
                       </td>
                       <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditDiseaseModal(dis)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer"
-                            title="এডিট"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteDisease(dis.id, dis.diseaseNameBn)}
-                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
-                            title="মুছে ফেলুন"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {hasEditPermission && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditDiseaseModal(dis)}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer"
+                              title="এডিট"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          {hasDeletePermission && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteDisease(dis.id, dis.diseaseNameBn)}
+                              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
+                              title="মুছে ফেলুন"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -547,17 +547,21 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
       .map(prod => {
         let soldQty = 0;
         let revenue = 0;
+        let cogs = 0;
 
         filteredPnlInvoices.forEach(inv => {
           inv.items.forEach(it => {
             if (it.productId === prod.id) {
               soldQty += it.quantity;
               revenue += it.total;
+              const unitCost = (it.purchasePrice !== undefined && it.purchasePrice > 0)
+                ? it.purchasePrice
+                : (prod.purchasePrice || 0);
+              cogs += (it.quantity * unitCost);
             }
           });
         });
 
-        const cogs = soldQty * prod.purchasePrice;
         const profit = revenue - cogs;
         const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0';
 
@@ -597,7 +601,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
       inv.items.forEach(it => {
         if (it.productId === selectedPnlProduct.id) {
           const rev = it.total;
-          const cost = it.quantity * selectedPnlProduct.purchasePrice;
+          const unitCost = (it.purchasePrice !== undefined && it.purchasePrice > 0)
+            ? it.purchasePrice
+            : (selectedPnlProduct.purchasePrice || 0);
+          const cost = it.quantity * unitCost;
           const prof = rev - cost;
           const mgn = rev > 0 ? ((prof / rev) * 100).toFixed(1) : '0';
 
@@ -609,7 +616,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ initialReportType = 's
             unit: it.unit || selectedPnlProduct.unit || 'Pcs',
             unitPrice: it.unitPrice,
             revenue: rev,
-            unitCost: selectedPnlProduct.purchasePrice,
+            unitCost: unitCost,
             totalCost: cost,
             grossProfit: prof,
             margin: mgn,

@@ -34,7 +34,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({ onOpenAddModal }) =>
     deleteExpenseCategory,
     formatCurrency,
     deleteExpenseVoucher,
-    openPrintModal
+    openPrintModal,
+    showToast
   } = useApp();
   const { t } = useTranslation(language);
 
@@ -113,7 +114,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({ onOpenAddModal }) =>
 
   const handleDelete = (exp: ExpenseVoucher) => {
     if (!hasDeletePermission) {
-      alert(language === 'bn' ? 'আপনার ভাউচার ডিলিট করার অনুমতি নেই' : 'You do not have permission to delete vouchers');
+      showToast(language === 'bn' ? 'আপনার ভাউচার ডিলিট করার অনুমতি নেই' : 'You do not have permission to delete vouchers', 'error');
       return;
     }
     if (confirm(`Delete expense voucher #${exp.voucherNo}?`)) {
@@ -234,7 +235,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({ onOpenAddModal }) =>
 
   const handleDeleteCategory = (cat: ExpenseCategory) => {
     if (!hasDeletePermission) {
-      alert(language === 'bn' ? 'আপনার খাত ডিলিট করার অনুমতি নেই' : 'You do not have permission to delete categories');
+      showToast(language === 'bn' ? 'আপনার খাত ডিলিট করার অনুমতি নেই' : 'You do not have permission to delete categories', 'error');
       return;
     }
     if (confirm(`Delete category: ${cat.name}?`)) {

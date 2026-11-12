@@ -29,7 +29,7 @@ export const PurchaseReturnView: React.FC<PurchaseReturnViewProps> = ({ initialI
   const { t } = useTranslation(language);
 
   const hasDeletePermission = canUserDelete(currentUser, 'purchase');
-  const hasReturnPermission = canUserReturn(currentUser);
+  const hasReturnPermission = canUserReturn(currentUser, 'purchase');
 
   const suppliers = parties.filter(p => p.type === 'SUPPLIER');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('ALL');
